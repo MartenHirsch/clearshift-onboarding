@@ -1,4 +1,7 @@
-require('dotenv').config();
+// Only load .env file in development — never override Railway's injected vars
+if (!process.env.RAILWAY_ENVIRONMENT) {
+  require('dotenv').config();
+}
 const express    = require('express');
 const multer     = require('multer');
 const fetch      = require('node-fetch');
