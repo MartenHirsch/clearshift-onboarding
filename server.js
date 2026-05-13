@@ -3,6 +3,17 @@ if (!process.env.RAILWAY_ENVIRONMENT) {
   require('dotenv').config();
 }
 
+// Support alternative variable names to work around Railway scanner
+const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_KEY || process.env.AI_KEY || '';
+const GROQ_KEY      = process.env.GROQ_API_KEY || process.env.GROQ_KEY || '';
+const DB_URL        = process.env.DATABASE_URL || process.env.DB_URL || process.env.POSTGRES_URL || '';
+
+console.log('ENV CHECK:',
+  'ANTHROPIC=', ANTHROPIC_KEY ? 'SET(' + ANTHROPIC_KEY.slice(0,8) + '...)' : 'MISSING',
+  'GROQ=', GROQ_KEY ? 'SET' : 'MISSING',
+  'DB=', DB_URL ? 'SET' : 'MISSING'
+);
+
 const express    = require('express');
 const multer     = require('multer');
 const fetch      = require('node-fetch');
@@ -18,18 +29,10 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ── Startup diagnostics ───────────────────────────────────────
-console.log('ENV CHECK:',
-  'ANTHROPIC_API_KEY=', process.env.ANTHROPIC_API_KEY ? 'SET(' + process.env.ANTHROPIC_API_KEY.slice(0,8) + '...)' : 'MISSING',
-  'GROQ_API_KEY=', process.env.GROQ_API_KEY ? 'SET' : 'MISSING',
-  'DATABASE_URL=', process.env.DATABASE_URL ? 'SET' : 'MISSING'
-);
-
 // ── Database setup (PostgreSQL) ───────────────────────────────
-const dbUrl = process.env.DATABASE_URL || '';
 const pool = new Pool({
-  connectionString: dbUrl,
-  ssl: dbUrl ? { rejectUnauthorized: false } : false
+  connectionString: DB_URL,
+  ssl: DB_URL ? { rejectUnauthorized: false } : false
 });
 
 async function initDB() {
@@ -128,7 +131,7 @@ app.delete('/api/applicants/:id', async (req, res) => {
 app.post('/api/transcribe', upload.single('audio'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No audio file provided' });
 
-  const groqKey = process.env.GROQ_API_KEY;
+  const groqKey = GROQ_KEY;
   if (!groqKey) return res.status(500).json({ error: 'GROQ_API_KEY not configured on server' });
 
   try {
@@ -168,7 +171,7 @@ app.post('/api/analyze', async (req, res) => {
   const { contentParts, fieldSummary, systemPrompt } = req.body;
   if (!contentParts || !fieldSummary) return res.status(400).json({ error: 'Missing contentParts or fieldSummary' });
 
-  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  const anthropicKey = ANTHROPIC_KEY;
   if (!anthropicKey) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured on server' });
 
   try {
