@@ -1,0 +1,1755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clearshift — Customer Onboarding</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  if (typeof pdfjsLib !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+</script>
+<style>
+  :root {
+    --bg: #0d0f0e;
+    --surface: #141716;
+    --surface2: #1c1f1d;
+    --border: #252927;
+    --border2: #2f3330;
+    --text: #e8ebe9;
+    --text-dim: #7a8a7d;
+    --text-dimmer: #4a5a4d;
+    --accent: #5bffa0;
+    --accent-dim: #2a7a4a;
+    --accent-glow: rgba(91, 255, 160, 0.12);
+    --warn: #ffb84d;
+    --warn-dim: rgba(255, 184, 77, 0.12);
+    --danger: #ff6b6b;
+    --danger-dim: rgba(255, 107, 107, 0.1);
+    --complete: #5bffa0;
+    --complete-dim: rgba(91, 255, 160, 0.1);
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* Background texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: 
+      radial-gradient(ellipse 80% 50% at 10% 20%, rgba(91,255,160,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 60% at 90% 80%, rgba(91,255,160,0.03) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    grid-template-rows: 64px 1fr;
+    min-height: 100vh;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  .header {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(13,15,14,0.9);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-mark {
+    width: 28px; height: 28px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; color: #0d0f0e;
+    font-family: 'Syne', sans-serif;
+  }
+
+  .logo-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.05em;
+    color: var(--text);
+  }
+
+  .header-meta {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .progress-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    padding: 5px 14px;
+  }
+
+  .progress-bar-mini {
+    width: 80px;
+    height: 4px;
+    background: var(--border2);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-bar-mini-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    border-right: 1px solid var(--border);
+    padding: 24px 0;
+    overflow-y: auto;
+    background: var(--surface);
+  }
+
+  .sidebar-section {
+    padding: 0 20px 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+
+  .sidebar-label {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dimmer);
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+
+  /* Upload zone */
+  .upload-zone {
+    border: 1.5px dashed var(--border2);
+    border-radius: var(--radius);
+    padding: 18px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--bg);
+  }
+
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+
+  .upload-zone input { display: none; }
+
+  .upload-icon {
+    font-size: 22px;
+    margin-bottom: 6px;
+  }
+
+  .upload-zone p {
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  .upload-zone strong {
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .file-types {
+    font-size: 10px;
+    color: var(--text-dimmer);
+    margin-top: 4px;
+  }
+
+  /* Uploaded files list */
+  .uploaded-files {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .file-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .file-item.processing::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0;
+    height: 2px;
+    width: 40%;
+    background: var(--accent);
+    animation: scanning 1.5s ease-in-out infinite;
+  }
+
+  @keyframes scanning {
+    0% { left: -40%; }
+    100% { left: 100%; }
+  }
+
+  .file-item.done { border-color: var(--accent-dim); }
+  .file-item.done .file-status { color: var(--accent); }
+  .file-item.skipped { border-color: rgba(255,184,77,0.3); opacity: 0.7; }
+  .file-item.skipped .file-status { color: var(--warn); }
+
+  .file-icon { font-size: 16px; flex-shrink: 0; }
+  .file-name { flex: 1; color: var(--text); truncate: true; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-status { font-size: 10px; color: var(--text-dim); flex-shrink: 0; }
+
+  .analyze-btn {
+    width: 100%;
+    margin-top: 12px;
+    padding: 10px;
+    background: var(--accent);
+    color: #0d0f0e;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .analyze-btn:hover { background: #7fffb8; transform: translateY(-1px); }
+  .analyze-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* Section nav */
+  .section-nav {
+    padding: 4px 12px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.15s;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: var(--accent-glow); color: var(--accent); border-left: 2px solid var(--accent); padding-left: 8px; }
+
+  .nav-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--border2);
+    transition: background 0.2s;
+  }
+
+  .nav-item .nav-dot.complete { background: var(--accent); }
+  .nav-item .nav-dot.partial { background: var(--warn); }
+  .nav-item .nav-dot.empty { background: var(--border2); }
+
+  .nav-count {
+    margin-left: auto;
+    font-size: 10px;
+    background: var(--surface2);
+    padding: 1px 6px;
+    border-radius: 10px;
+  }
+
+  /* Main content */
+  .main {
+    overflow-y: auto;
+    padding: 32px;
+    position: relative;
+  }
+
+  /* Status summary */
+  .status-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .stat-card.complete-card::before { background: var(--complete); }
+  .stat-card.missing-card::before { background: var(--danger); }
+  .stat-card.total-card::before { background: var(--text-dim); }
+
+  .stat-number {
+    font-family: 'Instrument Serif', serif;
+    font-size: 42px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-card.complete-card .stat-number { color: var(--accent); }
+  .stat-card.missing-card .stat-number { color: var(--danger); }
+  .stat-card.total-card .stat-number { color: var(--text); }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* Section heading */
+  .section-heading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    scroll-margin-top: 80px;
+  }
+
+  .section-heading h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .section-tag {
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    margin-left: auto;
+  }
+
+  .section-tag.complete { background: var(--complete-dim); color: var(--complete); border: 1px solid var(--accent-dim); }
+  .section-tag.partial { background: var(--warn-dim); color: var(--warn); border: 1px solid rgba(255,184,77,0.3); }
+  .section-tag.missing { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(255,107,107,0.2); }
+
+  /* Field table */
+  .field-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 32px;
+  }
+
+  .field-table th {
+    text-align: left;
+    padding: 8px 14px;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dimmer);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .field-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  .field-table tr:last-child td { border-bottom: none; }
+  .field-table tr:hover td { background: rgba(255,255,255,0.01); }
+
+  .field-name {
+    color: var(--text-dim);
+    font-size: 12px;
+    max-width: 220px;
+  }
+
+  .field-required {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+
+  .field-required.yes { background: var(--danger); }
+  .field-required.no { background: var(--text-dimmer); }
+
+  .field-value {
+    color: var(--text);
+    font-size: 12px;
+  }
+
+  .field-value.filled {
+    color: var(--text);
+  }
+
+  .field-value.missing {
+    color: var(--danger);
+    font-style: italic;
+  }
+
+  .field-value.optional-missing {
+    color: var(--text-dimmer);
+    font-style: italic;
+  }
+
+  .field-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+
+  .field-status-badge.filled { background: var(--complete-dim); color: var(--complete); border: 1px solid var(--accent-dim); }
+  .field-status-badge.required-missing { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(255,107,107,0.2); }
+  .field-status-badge.optional-missing { background: var(--surface2); color: var(--text-dimmer); border: 1px solid var(--border); }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 80px 40px;
+    color: var(--text-dim);
+  }
+
+  .empty-state .big-icon {
+    font-size: 48px;
+    margin-bottom: 20px;
+    opacity: 0.4;
+  }
+
+  .empty-state h3 {
+    font-family: 'Instrument Serif', serif;
+    font-size: 24px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+    font-weight: 400;
+  }
+
+  .empty-state p {
+    font-size: 12px;
+    color: var(--text-dimmer);
+    max-width: 400px;
+    margin: 0 auto;
+    line-height: 1.7;
+  }
+
+  /* Processing overlay */
+  .processing-banner {
+    display: none;
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    background: var(--surface2);
+    border: 1px solid var(--accent-dim);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    font-size: 12px;
+    color: var(--text);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    max-width: 320px;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s ease;
+  }
+
+  .processing-banner.show {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Source tag */
+  .source-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--surface2);
+    color: var(--text-dimmer);
+    margin-top: 3px;
+  }
+
+  /* Notice banner (soft, informational) */
+  .notice-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--warn);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  .notice-banner strong { color: var(--text); }
+  .notice-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+
+  /* Missing summary */
+  .missing-summary {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--danger);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 28px;
+  }
+
+  .missing-summary h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--danger);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .missing-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .missing-tag {
+    font-size: 10px;
+    padding: 4px 10px;
+    background: var(--danger-dim);
+    border: 1px solid rgba(255,107,107,0.2);
+    border-radius: 12px;
+    color: var(--danger);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .missing-tag:hover {
+    background: rgba(255,107,107,0.2);
+  }
+
+  /* Tooltip */
+  .tooltip {
+    position: relative;
+  }
+
+  .tooltip-text {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    font-size: 11px;
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+    z-index: 300;
+    pointer-events: none;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  }
+
+  .tooltip:hover .tooltip-text { display: block; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-dimmer); }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; grid-template-rows: 64px auto 1fr; }
+    .sidebar { border-right: none; border-bottom: 1px solid var(--border); max-height: 300px; }
+    .status-summary { grid-template-columns: 1fr 1fr; }
+    .main { padding: 20px; }
+  }
+
+  .field-type-badge {
+    font-size: 9px;
+    padding: 1px 5px;
+    background: var(--surface2);
+    color: var(--text-dimmer);
+    border-radius: 4px;
+    display: inline-block;
+    margin-top: 2px;
+  }
+
+  .no-uploads-hint {
+    font-size: 11px;
+    color: var(--text-dimmer);
+    text-align: center;
+    padding: 8px;
+    font-style: italic;
+  }
+
+  .section-block {
+    margin-bottom: 32px;
+  }
+
+  /* ===== PROGRESS OVERLAY ===== */
+  .progress-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(13,15,14,0.82);
+    backdrop-filter: blur(6px);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .progress-overlay.show {
+    display: flex;
+  }
+
+  .progress-modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    padding: 32px 36px;
+    width: 420px;
+    max-width: calc(100vw - 40px);
+    box-shadow: 0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(91,255,160,0.08);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Subtle shimmer along top edge */
+  .progress-modal::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.5;
+  }
+
+  .progress-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+
+  .progress-icon {
+    width: 42px; height: 42px;
+    background: var(--accent-glow);
+    border: 1px solid var(--accent-dim);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+    animation: iconPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes iconPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(91,255,160,0.2); }
+    50% { box-shadow: 0 0 0 8px rgba(91,255,160,0); }
+  }
+
+  .progress-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 3px;
+  }
+
+  .progress-subtitle {
+    font-size: 12px;
+    color: var(--text-dim);
+    min-height: 18px;
+    transition: color 0.3s;
+  }
+
+  /* Track */
+  .progress-track {
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 3px;
+    overflow: visible;
+    position: relative;
+    margin-bottom: 8px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+    border-radius: 3px;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+  }
+
+  /* Moving glow dot at the leading edge */
+  .progress-glow {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 12px; height: 12px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 12px 4px rgba(91,255,160,0.5);
+    transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+  }
+
+  .progress-pct {
+    text-align: right;
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 500;
+    margin-bottom: 24px;
+    font-family: 'DM Mono', monospace;
+    transition: opacity 0.3s;
+  }
+
+  /* Steps */
+  .progress-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .step-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--text-dimmer);
+    transition: color 0.3s;
+  }
+
+  .step-item.active { color: var(--text); }
+  .step-item.done   { color: var(--text-dim); }
+
+  .step-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border2);
+    flex-shrink: 0;
+    transition: all 0.3s;
+    background: transparent;
+  }
+
+  .step-item.active .step-dot {
+    border-color: var(--accent);
+    background: var(--accent);
+    box-shadow: 0 0 8px rgba(91,255,160,0.6);
+    animation: dotPulse 1s ease-in-out infinite;
+  }
+
+  .step-item.done .step-dot {
+    border-color: var(--accent-dim);
+    background: var(--accent-dim);
+  }
+
+  @keyframes dotPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.4); }
+  }
+
+  .step-label { flex: 1; }
+
+  .step-status {
+    font-size: 10px;
+    color: var(--text-dimmer);
+    min-width: 50px;
+    text-align: right;
+  }
+
+  .step-item.active .step-status { color: var(--accent); }
+  .step-item.done  .step-status { color: var(--text-dimmer); }
+
+  /* Error state inside modal */
+  .progress-error {
+    margin-top: 20px;
+    padding: 12px 14px;
+    background: var(--danger-dim);
+    border: 1px solid rgba(255,107,107,0.25);
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    color: var(--danger);
+    line-height: 1.5;
+  }
+  .transcript-input {
+    width: 100%;
+    min-height: 100px;
+    background: var(--bg);
+    border: 1.5px solid var(--border2);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    line-height: 1.6;
+    padding: 10px 12px;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .transcript-input:focus { border-color: var(--accent); }
+  .transcript-input::placeholder { color: var(--text-dimmer); }
+
+  .key-status {
+    font-size: 10px;
+    margin-bottom: 8px;
+    min-height: 14px;
+  }
+  .key-status.ok  { color: var(--accent); }
+  .key-status.err { color: var(--danger); }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">
+      <div class="logo-mark">C</div>
+      <div class="logo-name">CLEARSHIFT</div>
+    </div>
+    <div class="header-meta">
+      <span>Customer Onboarding Portal</span>
+      <div class="progress-pill">
+        <span id="progressText">0% complete</span>
+        <div class="progress-bar-mini">
+          <div class="progress-bar-mini-fill" id="progressFill" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <!-- Documents -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">Documents</div>
+      <label class="upload-zone" id="uploadZone">
+        <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx,.txt,.csv,.xlsx,.png,.jpg,.jpeg">
+        <div class="upload-icon">📄</div>
+        <p><strong>Click to upload</strong> or drag & drop</p>
+        <div class="file-types">PDF, DOCX, TXT, CSV, Images</div>
+      </label>
+      <div class="uploaded-files" id="uploadedFiles"></div>
+    </div>
+
+    <!-- Audio / Recordings -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">Call Recordings</div>
+      <label class="upload-zone" id="audioUploadZone">
+        <input type="file" id="audioFileInput" multiple accept=".mp3,.mp4,.wav,.m4a,.ogg,.mov,.webm,.flac,.aac">
+        <div class="upload-icon">🎙️</div>
+        <p><strong>Click to upload</strong> audio or video</p>
+        <div class="file-types">MP3, MP4, WAV, M4A — auto-transcribed via Groq</div>
+      </label>
+      <div class="uploaded-files" id="uploadedAudioFiles"></div>
+      <div id="transcriptSection" style="display:none; margin-top:10px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+          <div class="sidebar-label" style="margin:0">Transcript</div>
+          <span id="transcriptStatus" style="font-size:10px; color:var(--text-dim)"></span>
+        </div>
+        <textarea id="transcriptInput" class="transcript-input" placeholder="Transcript will appear here after upload…"></textarea>
+      </div>
+    </div>
+
+    <!-- Analyze -->
+    <div class="sidebar-section" style="border-bottom:none; padding-top:0">
+      <button class="analyze-btn" id="analyzeBtn" disabled>
+        <span>⚡</span> Analyze & Extract Fields
+      </button>
+    </div>
+
+    <div class="sidebar-section" style="border-bottom:none">
+      <div class="sidebar-label">Sections</div>
+      <nav class="section-nav" id="sectionNav"></nav>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main" id="mainContent">
+    <div class="empty-state" id="emptyState">
+      <div class="big-icon">📋</div>
+      <h3>No data collected yet</h3>
+      <p>Upload telephone recordings, PDFs, Word docs, or any documents containing customer information. Claude will automatically extract and map the data to the required onboarding fields.</p>
+    </div>
+  </main>
+</div>
+
+<!-- Progress overlay -->
+<div class="progress-overlay" id="progressOverlay">
+  <div class="progress-modal">
+    <div class="progress-modal-header">
+      <div class="progress-icon" id="progressIcon">⚡</div>
+      <div>
+        <div class="progress-title" id="progressTitle">Analyzing Documents</div>
+        <div class="progress-subtitle" id="progressSubtitle">Preparing…</div>
+      </div>
+    </div>
+
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFillBar" style="width:0%"></div>
+      <div class="progress-glow" id="progressGlow" style="left:0%"></div>
+    </div>
+    <div class="progress-pct" id="progressPct">0%</div>
+
+    <div class="progress-steps" id="progressSteps">
+      <div class="step-item" id="step-read">
+        <div class="step-dot"></div>
+        <div class="step-label">Reading files</div>
+        <div class="step-status" id="step-read-status">—</div>
+      </div>
+      <div class="step-item" id="step-send">
+        <div class="step-dot"></div>
+        <div class="step-label">Sending to Claude</div>
+        <div class="step-status" id="step-send-status">—</div>
+      </div>
+      <div class="step-item" id="step-extract">
+        <div class="step-dot"></div>
+        <div class="step-label">Extracting fields</div>
+        <div class="step-status" id="step-extract-status">—</div>
+      </div>
+      <div class="step-item" id="step-render">
+        <div class="step-dot"></div>
+        <div class="step-label">Building dashboard</div>
+        <div class="step-status" id="step-render-status">—</div>
+      </div>
+    </div>
+
+    <div class="progress-error" id="progressError" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+// ===== SCHEMA =====
+const SCHEMA = {
+  "title": "Universal Business Activity Questionnaire v2",
+  "sections": [
+    {
+      "id": "businessType",
+      "title": "Business Type",
+      "fields": [
+        { "id": "whatTypeOfCompanyAre", "title": "What type of Company are you?", "type": "select", "required": true,
+          "options": ["For Profit Business (Corporation, LLC, etc.)", "Sole Proprietor", "Not-for-profit"] }
+      ]
+    },
+    {
+      "id": "companyInformation",
+      "title": "Basic Business Information",
+      "fields": [
+        { "id": "companyNameInEnglish", "title": "Name of the Business", "type": "text", "required": true },
+        { "id": "aliasadditiona_afuzb", "title": "Other business names (DBA / Trade Names)", "type": "text", "required": false },
+        { "id": "doYouHaveAWebsiteOrS", "title": "Has website or social media presence?", "type": "select", "required": false, "options": ["Yes", "No"] },
+        { "id": "website", "title": "Business Website URL", "type": "text", "required": false },
+        { "id": "linkedinOrSocialMedi", "title": "LinkedIn or social media page", "type": "text", "required": false },
+        { "id": "sinceYouDontHaveAWeb", "title": "Other sales channels (if no website)", "type": "textArea", "required": false },
+        { "id": "companysAccountingFi", "title": "Name of Business Accountant", "type": "text", "required": false },
+        { "id": "replanguage", "title": "Preferred language", "type": "select", "required": false, "options": ["English", "Hebrew"] },
+        { "id": "doYouHaveAnyPartners", "title": "Do you have any partners?", "type": "select", "required": true, "options": ["Yes", "No"] },
+        { "id": "nameOfPartner", "title": "Full name(s) of partner(s)", "type": "text", "required": false }
+      ]
+    },
+    {
+      "id": "informationAboutTheC",
+      "title": "Business Activity Details",
+      "fields": [
+        { "id": "businessCategory", "title": "Business Category (primary revenue source)", "type": "select", "required": true, "options": ["Goods", "Services", "Donations", "Investment income", "Other"] },
+        { "id": "whatBusinessSectorsu", "title": "Business sector / subsector", "type": "text", "required": true },
+        { "id": "describeTheMainProdu", "title": "Describe your business in detail", "type": "textArea", "required": true },
+        { "id": "numberOfEmployees", "title": "Number of Employees", "type": "text", "required": false },
+        { "id": "annualRevenueOfTheCo", "title": "Estimated annual gross revenues (USD)", "type": "text", "required": true },
+        { "id": "whatWillYourEstimate", "title": "Estimated annual volume via Clearshift (USD)", "type": "text", "required": true },
+        { "id": "doesTheCompanyEngage", "title": "Operates in regulated/licensed industry?", "type": "select", "required": true, "options": ["Yes", "No"] },
+        { "id": "pleaseDescribeTheLic", "title": "Special license copies (file upload)", "type": "fileAttachment", "required": false },
+        { "id": "pleaseAttachCopiesTo", "title": "Describe special licenses held", "type": "textArea", "required": false }
+      ]
+    },
+    {
+      "id": "notforprofitActivity",
+      "title": "Non-profit Activity",
+      "condition": "businessType = Not-for-profit",
+      "fields": [
+        { "id": "describeYourNonProfi", "title": "Describe non-profit mission & geography", "type": "textArea", "required": false },
+        { "id": "estimatedAnnualBudge", "title": "Estimated Annual Budget (USD)", "type": "text", "required": false },
+        { "id": "doYouHavePaidEmploye", "title": "Do you have paid employees?", "type": "select", "required": false, "options": ["Yes", "No"] },
+        { "id": "numberOfPaidEmployee", "title": "Number of Paid Employees", "type": "text", "required": false },
+        { "id": "numberOfVolunteers", "title": "Number of volunteers", "type": "text", "required": false },
+        { "id": "passthroughNonprofit", "title": "Passthrough non-profit (distributes >50% to others)?", "type": "select", "required": true, "options": ["Yes", "No"] },
+        { "id": "publicProtestsOrPriv", "title": "Arranges public protests or hires lobbyists?", "type": "select", "required": true, "options": ["Yes", "No"] },
+        { "id": "doYouAcceptCashDonat", "title": "Accepts cash donations over $100?", "type": "select", "required": false, "options": ["Yes", "No"] },
+        { "id": "ifCashDonationsAreAc", "title": "Cash donation limit (if accepted)", "type": "text", "required": false },
+        { "id": "howDoYouRaiseYourCha", "title": "How charitable donations are raised", "type": "textArea", "required": false }
+      ]
+    },
+    {
+      "id": "disclosureRelatingTo",
+      "title": "Industry Risk Classification",
+      "fields": [
+        { "id": "isTheCompanyInvolved", "title": "Regulated/high-risk industry activities (select all)", "type": "multiSelect", "required": true,
+          "options": ["Not involved in any", "Adult entertainment", "Drug paraphernalia", "Carbon credits", "Gambling/lotteries", "Crypto exchange", "Weapons/military", "Fine jewellery / fine art", "Precious metals / stones", "Real estate agents", "Regulated financial services", "Shell banks", "Political organizations", "Pharmaceutical activities", "Other (see list)"] },
+        { "id": "controlledIndustries", "title": "Description of controlled industry activity", "type": "textArea", "required": false },
+        { "id": "bankingHistory", "title": "Banking history — AML/compliance terminations?", "type": "select", "required": true, "options": ["Never", "Yes", "Not exactly"] }
+      ]
+    },
+    {
+      "id": "serviceSelectionAndI",
+      "title": "Service Selection & Intended Usage",
+      "fields": [
+        { "id": "newQuestion151", "title": "Clearshift services planned to use", "type": "multiSelect", "required": false,
+          "options": ["Currency conversion", "Cross-border transfers", "Payments to/from affiliates", "Outgoing vendor payments", "Incoming customer payments", "Investor transfers", "Online marketplace revenue", "Holding multi-currency balances", "Special purpose entity"] }
+      ]
+    },
+    {
+      "id": "infomoneyflow",
+      "title": "Business Fund Flow Overview",
+      "fields": [
+        { "id": "willYouBeUsingClears", "title": "Direction of payment activity", "type": "select", "required": false, "options": ["Get paid by others", "Pay others", "Both", "Self"] },
+        { "id": "pleaseIndicateCountr", "title": "Multiple countries involved?", "type": "select", "required": false, "options": ["1 country", "Multiple Countries"] },
+        { "id": "country1", "title": "Primary payment country", "type": "countrySelect", "required": true },
+        { "id": "secondCountry", "title": "2nd country", "type": "countrySelect", "required": false },
+        { "id": "3rdCountry", "title": "3rd country", "type": "countrySelect", "required": false },
+        { "id": "4thCountry", "title": "4th country", "type": "countrySelect", "required": false },
+        { "id": "pleaseIndicateTheMos", "title": "Nature of payments (select all that apply)", "type": "multiSelect", "required": false,
+          "options": ["Sales revenue (retail)", "Sales revenue (commercial)", "Progress payments", "Payments from related entities", "Asset sales", "Stakeholder funding", "Loan repayments", "Real estate funding", "Dividends", "Commissions/royalties", "Services payment", "Grants", "Other"] },
+        { "id": "nextRelevantPayment", "title": "Approximate date of first payment via Clearshift", "type": "dateTime", "required": false },
+        { "id": "vendorserviceProvide", "title": "First payment supporting document (file)", "type": "fileAttachment", "required": false }
+      ]
+    },
+    {
+      "id": "standingInstructionS",
+      "title": "Automated Conversion Service",
+      "fields": [
+        { "id": "willClearshiftBeRece", "title": "Will Clearshift receive 3rd-party payments on your behalf?", "type": "select", "required": false, "options": ["Yes", "No"] },
+        { "id": "whenClearshiftReceiv", "title": "Standing Instruction — auto-convert & deliver funds?", "type": "select", "required": false, "options": ["Yes", "No"] }
+      ]
+    },
+    {
+      "id": "informationAboutPoli",
+      "title": "Politically Exposed Persons (PEP)",
+      "fields": [
+        { "id": "areYouAPep", "title": "Is any owner/manager/UBO a PEP?", "type": "select", "required": true, "options": ["Yes", "No", "Uncertain"] },
+        { "id": "namesurnameOfPep", "title": "Full name of PEP individual(s)", "type": "text", "required": false },
+        { "id": "positionOfPep", "title": "Government position of PEP", "type": "text", "required": false },
+        { "id": "countryOfPep", "title": "Country of PEP", "type": "countrySelect", "required": false },
+        { "id": "detailedDescriptionO", "title": "Detailed description of PEP relationship", "type": "textArea", "required": false }
+      ]
+    },
+    {
+      "id": "destinationaccountdetails",
+      "title": "Primary Bank Account Details",
+      "fields": [
+        { "id": "countryWhereMyPrimar", "title": "Country of primary bank account", "type": "select", "required": true, "options": ["Israel", "European Union", "United States"] },
+        { "id": "domesticacctnames", "title": "Name(s) on Israeli bank account", "type": "text", "required": false },
+        { "id": "israelibank", "title": "Israeli bank account entry method", "type": "select", "required": false, "options": ["Branch code + account number", "IBAN"] },
+        { "id": "pleaseSelectIsraeliB", "title": "Israeli bank name", "type": "selectDropdown", "required": false },
+        { "id": "domesticbankbranchnumber", "title": "Branch code", "type": "text", "required": false },
+        { "id": "domesticbankaccountnumber", "title": "Bank account number", "type": "text", "required": false },
+        { "id": "linkedaccountiban", "title": "IBAN (Israeli)", "type": "text", "required": false },
+        { "id": "newQuestion2013", "title": "Name as on US bank account", "type": "text", "required": false },
+        { "id": "bankName", "title": "US bank name", "type": "text", "required": false },
+        { "id": "routingNumber", "title": "US routing number type", "type": "multiSelect", "required": false, "options": ["ACH Routing Number", "Fedwire Routing Number", "Dual Use"] },
+        { "id": "achRoutingNumber", "title": "ACH routing number", "type": "text", "required": false },
+        { "id": "fedwireRoutingNumber", "title": "Fedwire routing number", "type": "text", "required": false },
+        { "id": "dualUseRoutingNumber", "title": "Dual use routing number", "type": "text", "required": false },
+        { "id": "nameOfOwnersAsItAppe", "title": "Name(s) on EU bank account", "type": "text", "required": false },
+        { "id": "bankName_l4i6i", "title": "EU bank name", "type": "text", "required": false },
+        { "id": "ibanNumber", "title": "EU IBAN number", "type": "text", "required": false },
+        { "id": "destinationbaverification", "title": "Bank account verification document (file)", "type": "fileAttachment", "required": false }
+      ]
+    }
+  ]
+};
+
+// ===== STATE =====
+let uploadedFiles = [];
+let extractedData = {}; // fieldId -> { value, source }
+let isProcessing = false;
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', () => {
+  setupUpload();
+  renderNav();
+});
+
+// ===== UPLOAD =====
+let audioFiles = []; // separate list for audio uploads
+
+function setupUpload() {
+  // Documents
+  const zone  = document.getElementById('uploadZone');
+  const input = document.getElementById('fileInput');
+  input.addEventListener('change', e => addDocFiles(Array.from(e.target.files)));
+  zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('dragover');
+    addDocFiles(Array.from(e.dataTransfer.files));
+  });
+
+  // Audio
+  const audioZone  = document.getElementById('audioUploadZone');
+  const audioInput = document.getElementById('audioFileInput');
+  audioInput.addEventListener('change', e => addAudioFiles(Array.from(e.target.files)));
+  audioZone.addEventListener('dragover',  e => { e.preventDefault(); audioZone.classList.add('dragover'); });
+  audioZone.addEventListener('dragleave', () => audioZone.classList.remove('dragover'));
+  audioZone.addEventListener('drop', e => {
+    e.preventDefault(); audioZone.classList.remove('dragover');
+    addAudioFiles(Array.from(e.dataTransfer.files));
+  });
+
+  document.getElementById('analyzeBtn').addEventListener('click', analyzeFiles);
+}
+
+function addDocFiles(files) {
+  files.forEach(f => {
+    if (!uploadedFiles.find(u => u.name === f.name))
+      uploadedFiles.push({ file: f, name: f.name, status: 'pending' });
+  });
+  renderFileList();
+  updateAnalyzeBtn();
+}
+
+function addAudioFiles(files) {
+  files.forEach(f => {
+    if (!audioFiles.find(u => u.name === f.name))
+      audioFiles.push({ file: f, name: f.name, status: 'pending', transcript: null });
+  });
+  renderAudioFileList();
+  updateAnalyzeBtn();
+  // Transcribe each new file automatically
+  files.forEach(f => {
+    if (!audioFiles.find(u => u.name === f.name && u.transcript)) {
+      transcribeAudio(f);
+    }
+  });
+}
+
+function updateAnalyzeBtn() {
+  const total = uploadedFiles.length + audioFiles.length;
+  document.getElementById('analyzeBtn').disabled = total === 0 || isProcessing;
+}
+
+async function transcribeAudio(file) {
+  const entry = audioFiles.find(u => u.name === file.name);
+  if (!entry) return;
+
+  entry.status = 'transcribing';
+  renderAudioFileList();
+  setTranscriptStatus(`Transcribing ${file.name}…`);
+  document.getElementById('transcriptSection').style.display = 'block';
+
+  try {
+    const formData = new FormData();
+    formData.append('audio', file, file.name);
+
+    const res = await fetch('/api/transcribe', {
+      method: 'POST',
+      body: formData
+    });
+
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || `Server error ${res.status}`);
+
+    entry.transcript = data.transcript.trim();
+    entry.status = 'done';
+
+    const ta = document.getElementById('transcriptInput');
+    const existing = ta.value.trim();
+    ta.value = existing
+      ? existing + '\n\n--- ' + file.name + ' ---\n' + entry.transcript
+      : '--- ' + file.name + ' ---\n' + entry.transcript;
+
+    setTranscriptStatus(`✓ Transcribed ${audioFiles.filter(f => f.status === 'done').length}/${audioFiles.length}`);
+
+  } catch(e) {
+    entry.status = 'error';
+    entry.error = e.message;
+    setTranscriptStatus(`⚠ ${e.message}`);
+  }
+
+  renderAudioFileList();
+  updateAnalyzeBtn();
+}
+
+function setTranscriptStatus(msg) {
+  const el = document.getElementById('transcriptStatus');
+  if (el) el.textContent = msg;
+}
+
+function renderAudioFileList() {
+  const container = document.getElementById('uploadedAudioFiles');
+  if (!container) return;
+  container.innerHTML = '';
+  audioFiles.forEach(f => {
+    const item = document.createElement('div');
+    const stateClass = f.status === 'done' ? 'done'
+      : f.status === 'transcribing' ? 'processing'
+      : f.status === 'error' ? 'skipped' : '';
+    item.className = 'file-item ' + stateClass;
+    const icon   = f.status === 'done' ? '✓' : f.status === 'transcribing' ? '…' : f.status === 'error' ? '⚠' : 'ready';
+    const title  = f.status === 'error' ? f.error : f.status === 'transcribing' ? 'Transcribing…' : f.status === 'done' ? 'Transcribed' : 'Queued';
+    item.innerHTML = `
+      <span class="file-icon">🎙️</span>
+      <span class="file-name" title="${title}">${f.name}</span>
+      <span class="file-status">${icon}</span>
+    `;
+    container.appendChild(item);
+  });
+}
+
+function addFiles(files) { addDocFiles(files); } // legacy alias
+
+function getFileIcon(name) {
+  const ext = name.split('.').pop().toLowerCase();
+  if (['mp3','wav','m4a','ogg','mp4'].includes(ext)) return '🎙️';
+  if (['pdf'].includes(ext)) return '📄';
+  if (['doc','docx'].includes(ext)) return '📝';
+  if (['jpg','jpeg','png','gif'].includes(ext)) return '🖼️';
+  if (['csv','xlsx'].includes(ext)) return '📊';
+  return '📎';
+}
+
+function renderFileList() {
+  const container = document.getElementById('uploadedFiles');
+  container.innerHTML = '';
+  uploadedFiles.forEach(f => {
+    const item = document.createElement('div');
+    const stateClass = f.status === 'done' ? 'done' : f.status === 'processing' ? 'processing' : f.status === 'skipped' ? 'skipped' : '';
+    item.className = 'file-item ' + stateClass;
+    const statusIcon = f.status === 'done' ? '✓' : f.status === 'processing' ? '…' : f.status === 'skipped' ? '⊘' : 'ready';
+    item.innerHTML = `
+      <span class="file-icon">${getFileIcon(f.name)}</span>
+      <span class="file-name">${f.name}</span>
+      <span class="file-status">${statusIcon}</span>
+    `;
+    if (f.status === 'skipped') {
+      item.title = 'Audio/video cannot be read as text — upload a transcript instead';
+    }
+    container.appendChild(item);
+  });
+}
+
+// ===== ANALYSIS =====
+async function analyzeFiles() {
+  const totalFiles = uploadedFiles.length + audioFiles.length;
+  if (isProcessing || totalFiles === 0) return;
+  isProcessing = true;
+  document.getElementById('analyzeBtn').disabled = true;
+
+  showProgress();
+
+  // ── STEP 1: Read text documents ─────────────────────────────
+  setStep('read', 'active');
+  setProgress(5, 'Reading uploaded files…');
+
+  const fileContents = [];
+  const total = uploadedFiles.length;
+
+  for (let i = 0; i < total; i++) {
+    const f = uploadedFiles[i];
+    f.status = 'processing';
+    renderFileList();
+    const pct = 5 + Math.round((i / total) * 25);
+    setProgress(pct, `Reading ${i + 1} of ${total}: ${f.name}`);
+    try {
+      const result = await readFile(f.file);
+      fileContents.push({ name: f.name, ...result });
+      f.status = 'done';
+    } catch(e) {
+      fileContents.push({ name: f.name, kind: 'text', content: `[Error reading ${f.name}: ${e.message}]` });
+      f.status = 'done';
+    }
+    renderFileList();
+  }
+
+  const transcribedAudio = audioFiles.filter(f => f.transcript);
+  setStep('read', 'done', `${fileContents.length} docs, ${transcribedAudio.length} transcripts`);
+  setProgress(30, 'Files read — preparing request…');
+
+  // ── STEP 2: Build & send to Claude ──────────────────────────
+  setStep('send', 'active');
+  setProgress(35, `Sending to Claude…`);
+
+  const systemPrompt = `You are a data extraction assistant for a financial services onboarding system. Extract customer information from documents and call transcripts, and map it to the provided field list.
+
+CRITICAL: Respond with ONLY a raw JSON object. No prose, no markdown, no code fences. Start your response with { and end with }.
+
+JSON structure:
+{"extracted":{"<fieldId>":{"value":"<extracted value>","confidence":"high|medium|low"}},"summary":"<one sentence>"}
+
+Rules:
+- Only include fields where you clearly found information
+- For select fields, value must exactly match one of the provided options
+- Do not invent or infer data not present in the documents
+- If nothing useful is found, return {"extracted":{},"summary":"No extractable onboarding data found"}`;
+
+  const fieldSummary = SCHEMA.sections.map(s =>
+    `${s.title}:\n` + s.fields.map(f =>
+      `  ${f.id}: "${f.title}"${f.options ? ' [options: ' + f.options.join(' | ') + ']' : ''}${f.required ? ' *required' : ''}`
+    ).join('\n')
+  ).join('\n\n');
+
+  const contentParts = [{
+    type: 'text',
+    text: `Available onboarding fields:\n\n${fieldSummary}\n\n---\n\nPlease extract all onboarding information from the following:`
+  }];
+
+  // Text documents
+  for (const f of fileContents) {
+    contentParts.push({ type: 'text', text: `\n=== Document: ${f.name} ===\n${f.content}` });
+  }
+
+  // Transcripts from audio files (auto-generated by Whisper)
+  for (const f of transcribedAudio) {
+    contentParts.push({ type: 'text', text: `\n=== Call Transcript (from: ${f.name}) ===\n${f.transcript}` });
+  }
+
+  // Also include anything manually typed/edited in the textarea
+  const manualTranscript = document.getElementById('transcriptInput')?.value?.trim();
+  const autoText = transcribedAudio.map(f => f.transcript).join('\n');
+  if (manualTranscript && manualTranscript !== autoText) {
+    contentParts.push({ type: 'text', text: `\n=== Additional Transcript Notes ===\n${manualTranscript}` });
+  }
+
+  if (contentParts.length === 1) {
+    // Only the preamble — nothing to analyze
+    hideProgress();
+    showErrorBanner('No content to analyze. Upload documents or wait for audio transcription to complete.');
+    isProcessing = false;
+    document.getElementById('analyzeBtn').disabled = false;
+    return;
+  }
+
+  try {
+    setProgress(45, 'Waiting for Claude response…');
+
+    const response = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contentParts, fieldSummary, systemPrompt })
+    });
+
+    setStep('send', 'done', 'received');
+    setProgress(65, 'Response received — parsing…');
+
+    const data = await response.json();
+
+    if (data.error) {
+      throw new Error(data.error);
+    }
+
+    // ── STEP 3: Extract fields ────────────────────────────────
+    setStep('extract', 'active');
+    setProgress(70, 'Extracting field values…');
+
+    let fieldsFound = 0;
+    if (data.extracted) {
+      Object.entries(data.extracted).forEach(([k, v]) => {
+        if (v && v.value) {
+          extractedData[k] = {
+            value: v.value,
+            confidence: v.confidence || 'medium',
+            note: v.note || '',
+            sources: fileContents.map(f => f.name)
+          };
+          fieldsFound++;
+        }
+      });
+    }
+
+    setStep('extract', 'done', `${fieldsFound} fields`);
+    setProgress(88, `Found ${fieldsFound} field${fieldsFound !== 1 ? 's' : ''} — building dashboard…`);
+
+    // ── STEP 4: Render ────────────────────────────────────────
+    setStep('render', 'active');
+    setProgress(94, 'Rendering results…');
+
+    // Small delay so the user sees the render step tick
+    await new Promise(r => setTimeout(r, 300));
+
+    renderDashboard();
+
+    setStep('render', 'done');
+    setProgress(100, fieldsFound > 0 ? `Done — ${fieldsFound} fields extracted` : 'Done — no data found in documents');
+
+    await new Promise(r => setTimeout(r, 600));
+    hideProgress();
+
+  } catch(e) {
+    console.error('Analysis error:', e);
+    setStep('send', 'done');
+    setStep('extract', 'done');
+    showProgressError(`Analysis failed: ${e.message}`);
+    renderDashboard();
+  }
+
+  isProcessing = false;
+  document.getElementById('analyzeBtn').disabled = false;
+}
+
+async function readFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+
+  // Images
+  if (['jpg','jpeg','png','gif','webp','bmp','tiff'].includes(ext)) {
+    return { kind: 'text', content: `[Image attached: ${file.name} — upload a text transcript for extraction]` };
+  }
+
+  // DOCX — use mammoth to extract real text
+  if (['docx','doc'].includes(ext)) {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      const text = result.value?.trim();
+      return { kind: 'text', content: text && text.length > 20 ? text : `[DOCX: ${file.name} — no readable text extracted]` };
+    } catch(e) {
+      return { kind: 'text', content: `[DOCX: ${file.name} — extraction failed: ${e.message}]` };
+    }
+  }
+
+  // PDF — use pdf.js to extract text from all pages
+  if (ext === 'pdf') {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const pages = [];
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        pages.push(content.items.map(item => item.str).join(' '));
+      }
+      const text = pages.join('\n').trim();
+      return { kind: 'text', content: text && text.length > 20 ? text : `[PDF: ${file.name} — no selectable text (may be scanned)]` };
+    } catch(e) {
+      return { kind: 'text', content: `[PDF: ${file.name} — extraction failed: ${e.message}]` };
+    }
+  }
+
+  // Plain text formats
+  if (['txt','md','csv','json','rtf','html','htm'].includes(ext)) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = e => resolve({ kind: 'text', content: e.target.result || `[File: ${file.name} — empty]` });
+      reader.onerror = () => resolve({ kind: 'text', content: `[File: ${file.name} — could not read]` });
+      reader.readAsText(file);
+    });
+  }
+
+  return { kind: 'text', content: `[File: ${file.name} — unsupported format. Convert to PDF or TXT.]` };
+}
+
+// ===== RENDER =====
+function renderDashboard() {
+  const main = document.getElementById('mainContent');
+  document.getElementById('emptyState')?.remove();
+
+  // Calculate stats
+  const allRequiredFields = SCHEMA.sections.flatMap(s => s.fields.filter(f => f.required));
+  const allFields = SCHEMA.sections.flatMap(s => s.fields);
+  const completedRequired = allRequiredFields.filter(f => extractedData[f.id]);
+  const completedAll = allFields.filter(f => extractedData[f.id]);
+  const missingRequired = allRequiredFields.filter(f => !extractedData[f.id]);
+
+  const pct = allRequiredFields.length > 0 
+    ? Math.round((completedRequired.length / allRequiredFields.length) * 100) 
+    : 0;
+
+  document.getElementById('progressText').textContent = `${pct}% complete`;
+  document.getElementById('progressFill').style.width = pct + '%';
+
+  // Build HTML
+  let html = '';
+
+  // Audio notice if recordings were uploaded
+  const untranscribed = audioFiles.filter(f => f.status !== 'done');
+  if (audioFiles.length > 0) {
+    const allDone = untranscribed.length === 0;
+    html += `<div class="notice-banner">
+      <span class="notice-icon">🎙️</span>
+      <div>
+        <strong>${audioFiles.length} recording${audioFiles.length > 1 ? 's' : ''} uploaded.</strong>
+        ${allDone
+          ? `All transcribed and included in extraction.`
+          : `${untranscribed.length} still transcribing — re-analyze after transcription completes to include them.`}
+      </div>
+    </div>`;
+  }
+
+  // Stats
+  html += `<div class="status-summary">
+    <div class="stat-card complete-card">
+      <div class="stat-number">${completedAll.length}</div>
+      <div class="stat-label">Fields Collected</div>
+    </div>
+    <div class="stat-card missing-card">
+      <div class="stat-number">${missingRequired.length}</div>
+      <div class="stat-label">Required Missing</div>
+    </div>
+    <div class="stat-card total-card">
+      <div class="stat-number">${allFields.length}</div>
+      <div class="stat-label">Total Fields</div>
+    </div>
+  </div>`;
+
+  // Missing required summary
+  if (missingRequired.length > 0) {
+    html += `<div class="missing-summary">
+      <h3>⚠ Required fields still missing</h3>
+      <div class="missing-list">
+        ${missingRequired.map(f => `<span class="missing-tag" onclick="scrollToField('${f.id}')">${f.title}</span>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  // Sections
+  SCHEMA.sections.forEach(section => {
+    const sectionFields = section.fields;
+    const filledCount = sectionFields.filter(f => extractedData[f.id]).length;
+    const requiredCount = sectionFields.filter(f => f.required).length;
+    const filledRequired = sectionFields.filter(f => f.required && extractedData[f.id]).length;
+    
+    let tagClass = 'missing', tagText = `0/${requiredCount} required`;
+    if (filledRequired === requiredCount && requiredCount > 0) { tagClass = 'complete'; tagText = 'Required complete'; }
+    else if (filledCount > 0) { tagClass = 'partial'; tagText = `${filledRequired}/${requiredCount} required`; }
+    else if (requiredCount === 0) { tagClass = 'complete'; tagText = 'Optional'; }
+
+    html += `<div class="section-block" id="section-${section.id}">
+      <div class="section-heading">
+        <h2>${section.title}</h2>
+        ${section.condition ? `<span style="font-size:10px; color:var(--text-dimmer)">if ${section.condition}</span>` : ''}
+        <span class="section-tag ${tagClass}">${tagText}</span>
+      </div>
+      <table class="field-table">
+        <thead>
+          <tr>
+            <th style="width:35%">Field</th>
+            <th style="width:45%">Value</th>
+            <th style="width:20%">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${sectionFields.map(field => renderFieldRow(field)).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  });
+
+  main.innerHTML = html;
+  renderNav();
+}
+
+function renderFieldRow(field) {
+  const data = extractedData[field.id];
+  const isFile = ['fileAttachment', 'multiFileAttachments'].includes(field.type);
+  
+  let valueHtml, statusHtml;
+
+  if (data) {
+    let displayVal = data.value;
+    if (isFile) displayVal = '📎 Document provided';
+    
+    valueHtml = `<div class="field-value filled">${escHtml(displayVal)}</div>
+      ${data.sources ? `<div class="source-tag">📄 ${data.sources.join(', ')}</div>` : ''}`;
+    statusHtml = `<span class="field-status-badge filled">✓ Filled</span>`;
+  } else if (isFile) {
+    valueHtml = `<div class="field-value optional-missing">No file uploaded</div>`;
+    statusHtml = `<span class="field-status-badge optional-missing">— Upload required</span>`;
+  } else if (field.required) {
+    valueHtml = `<div class="field-value missing">Not found in documents</div>`;
+    statusHtml = `<span class="field-status-badge required-missing">⚠ Required</span>`;
+  } else {
+    valueHtml = `<div class="field-value optional-missing">Not provided</div>`;
+    statusHtml = `<span class="field-status-badge optional-missing">— Optional</span>`;
+  }
+
+  return `<tr id="field-${field.id}">
+    <td>
+      <div class="field-name">${escHtml(field.title)}
+        <span class="field-required ${field.required ? 'yes' : 'no'}" title="${field.required ? 'Required' : 'Optional'}"></span>
+      </div>
+      <div class="field-type-badge">${field.type}</div>
+    </td>
+    <td>${valueHtml}</td>
+    <td>${statusHtml}</td>
+  </tr>`;
+}
+
+function renderNav() {
+  const nav = document.getElementById('sectionNav');
+  nav.innerHTML = '';
+  
+  SCHEMA.sections.forEach(section => {
+    const sectionFields = section.fields;
+    const filledCount = sectionFields.filter(f => extractedData[f.id]).length;
+    const requiredCount = sectionFields.filter(f => f.required).length;
+    const filledRequired = sectionFields.filter(f => f.required && extractedData[f.id]).length;
+
+    let dotClass = 'empty';
+    if (requiredCount === 0 || (filledCount > 0 && filledRequired === requiredCount)) dotClass = 'complete';
+    else if (filledCount > 0) dotClass = 'partial';
+
+    const item = document.createElement('div');
+    item.className = 'nav-item';
+    item.innerHTML = `
+      <span class="nav-dot ${dotClass}"></span>
+      <span>${section.title}</span>
+      <span class="nav-count">${filledCount}/${sectionFields.length}</span>
+    `;
+    item.addEventListener('click', () => {
+      const el = document.getElementById('section-' + section.id);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    nav.appendChild(item);
+  });
+}
+
+// ===== UTILS =====
+// ===== PROGRESS MODAL =====
+const STEPS = ['read', 'send', 'extract', 'render'];
+
+function showProgress() {
+  document.getElementById('progressOverlay').classList.add('show');
+  setProgress(0, 'Starting…');
+  STEPS.forEach(s => setStep(s, 'pending'));
+}
+
+function hideProgress() {
+  document.getElementById('progressOverlay').classList.remove('show');
+}
+
+function setProgress(pct, subtitle) {
+  document.getElementById('progressFillBar').style.width = pct + '%';
+  document.getElementById('progressGlow').style.left   = pct + '%';
+  document.getElementById('progressPct').textContent   = pct + '%';
+  if (subtitle !== undefined) {
+    document.getElementById('progressSubtitle').textContent = subtitle;
+  }
+}
+
+function setStep(stepId, state, statusText) {
+  const el = document.getElementById('step-' + stepId);
+  if (!el) return;
+  el.className = 'step-item ' + (state === 'active' ? 'active' : state === 'done' ? 'done' : '');
+  const st = document.getElementById('step-' + stepId + '-status');
+  if (st) st.textContent = statusText || (state === 'done' ? '✓' : state === 'active' ? '…' : '—');
+}
+
+function showProgressError(msg) {
+  const err = document.getElementById('progressError');
+  err.textContent = '⚠ ' + msg;
+  err.style.display = 'block';
+  document.getElementById('progressIcon').textContent = '⚠';
+  document.getElementById('progressTitle').textContent = 'Analysis incomplete';
+  document.getElementById('progressSubtitle').style.color = 'var(--danger)';
+  // Close after 5 s
+  setTimeout(hideProgress, 5000);
+}
+
+// Keep old aliases so any stray calls don't crash
+function showBanner(msg)      { showProgress(); setProgress(0, msg); }
+function updateBanner(msg)    { document.getElementById('progressSubtitle').textContent = msg; }
+function hideBanner()         { hideProgress(); }
+function showErrorBanner(msg) { showProgress(); showProgressError(msg); }
+
+function scrollToField(fieldId) {
+  const el = document.getElementById('field-' + fieldId);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  el?.classList.add('highlight');
+  setTimeout(() => el?.classList.remove('highlight'), 2000);
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+</script>
+</body>
+</html>
