@@ -1354,7 +1354,7 @@ async function analyzeFiles() {
   setStep('send', 'active');
   setProgress(35, `Sending to Claude…`);
 
-  const systemPrompt = `You are a data extraction assistant for a financial services onboarding system. Extract customer information from documents and call transcripts, and map it to the provided field list.
+  const systemPrompt = `You are a data extraction assistant for a financial services onboarding system. Extract customer information from documents and call transcripts, and map it to the provided field list. Documents may be in any language including Hebrew and Arabic — always extract and return values in English.
 
 CRITICAL: Respond with ONLY a raw JSON object. No prose, no markdown, no code fences. Start your response with { and end with }.
 
@@ -1364,6 +1364,7 @@ JSON structure:
 Rules:
 - Only include fields where you clearly found information
 - For select fields, value must exactly match one of the provided options
+- Translate or transliterate non-English values into English
 - Do not invent or infer data not present in the documents
 - If nothing useful is found, return {"extracted":{},"summary":"No extractable onboarding data found"}`;
 

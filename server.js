@@ -63,19 +63,28 @@ app.post('/api/analyze', async (req, res) => {
   if (!groqKey) return res.status(500).json({ error: 'GROQ_API_KEY not configured on server' });
 
   try {
-    const TPM_LIMIT      = 5800;
+    const TPM_LIMIT       = 5800;
     const RESPONSE_TOKENS = 800;
-    const SYSTEM_TOKENS   = Math.ceil(systemPrompt.length / 4);
-    const AVAILABLE       = TPM_LIMIT - RESPONSE_TOKENS - SYSTEM_TOKENS;
 
-    // Extract document/transcript text, capped so it leaves room for fields
+    // Build a multilingual-aware system prompt
+    const multilingualPrompt = systemPrompt +
+      '\n\nIMPORTANT: Documents may be in Hebrew, Arabic, or other languages. ' +
+      'You MUST still extract the data and return field values in English where possible. ' +
+      'For example, Hebrew company names should be transliterated or translated to English. ' +
+      'Do not skip fields just because the document is not in English.';
+
+    const SYSTEM_TOKENS = Math.ceil(multilingualPrompt.length / 4);
+    const AVAILABLE     = TPM_LIMIT - RESPONSE_TOKENS - SYSTEM_TOKENS;
+
+    // Extract ALL document/transcript text — Hebrew PDFs need more characters
+    // since Hebrew characters can be multi-byte
     const docText = contentParts
       .map(p => p.text || '')
       .filter(t => t.includes('===') || t.toLowerCase().includes('transcript'))
       .join('\n')
-      .slice(0, 2000);
+      .slice(0, 3500);
 
-    const docTokens = Math.ceil(docText.length / 4);
+    const docTokens = Math.ceil((docText.length * 1.5) / 4); // Hebrew tokens ~1.5x longer
 
     // Split field summary lines into batches that fit within token budget
     const fieldLines = fieldSummary.split('\n');
@@ -117,7 +126,7 @@ app.post('/api/analyze', async (req, res) => {
           max_tokens: RESPONSE_TOKENS,
           temperature: 0.1,
           messages: [
-            { role: 'system', content: systemPrompt },
+            { role: 'system', content: multilingualPrompt },
             { role: 'user',   content: userText }
           ]
         })
@@ -137,7 +146,7 @@ app.post('/api/analyze', async (req, res) => {
               max_tokens: RESPONSE_TOKENS,
               temperature: 0.1,
               messages: [
-                { role: 'system', content: systemPrompt },
+                { role: 'system', content: multilingualPrompt },
                 { role: 'user',   content: userText }
               ]
             })
