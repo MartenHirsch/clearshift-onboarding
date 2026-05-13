@@ -1624,7 +1624,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ===== PROGRESS UPDATE (lightweight — no full re-render) =====
 function updateProgress() {
-  const allRequired = SCHEMA.sections.flatMap(s => s.fields.filter(f => f.required));
+  const bv = extractedData['whatTypeOfCompanyAre']?.value || '';
+  const isNP = bv.toLowerCase().includes('not-for-profit') || bv.toLowerCase().includes('nonprofit');
+  const isFP = bv.toLowerCase().includes('for profit') || bv.toLowerCase().includes('corporation') || bv.toLowerCase().includes('sole proprietor');
+  const activeSecs = SCHEMA.sections.filter(s => !s.condition || !(isFP && !isNP));
+  const allRequired = activeSecs.flatMap(s => s.fields.filter(f => f.required));
   const filled      = allRequired.filter(f => extractedData[f.id]);
   const pct = allRequired.length > 0 ? Math.round((filled.length / allRequired.length) * 100) : 0;
   document.getElementById('progressText').textContent = `${pct}% complete`;
@@ -2302,9 +2306,32 @@ function renderDashboard() {
   const main = document.getElementById('mainContent');
   document.getElementById('emptyState')?.remove();
 
-  // Calculate stats
-  const allRequiredFields = SCHEMA.sections.flatMap(s => s.fields.filter(f => f.required));
-  const allFields = SCHEMA.sections.flatMap(s => s.fields);
+  // Determine which sections are active based on business type
+  const businessTypeValue = extractedData['whatTypeOfCompanyAre']?.value || '';
+  const isNonProfit = businessTypeValue.toLowerCase().includes('not-for-profit') || businessTypeValue.toLowerCase().includes('nonprofit');
+  const isForProfit = businessTypeValue.toLowerCase().includes('for profit') || businessTypeValue.toLowerCase().includes('corporation') || businessTypeValue.toLowerCase().includes('sole proprietor');
+
+  const activeSections = SCHEMA.sections.filter(s => {
+    if (!s.condition) return true;
+    if (isForProfit && !isNonProfit) return false; // hide non-profit section
+    return true; // show if type unknown or is non-profit
+  });
+
+  // Field visibility helper (must match the one in sections loop)
+  const FIELD_CONDITIONS_MAP = {
+    'doYouHaveAnyPartners': ['for profit', 'sole proprietor'],
+    'nameOfPartner':        ['for profit', 'sole proprietor'],
+  };
+  function fieldVisible(fieldId) {
+    const cond = FIELD_CONDITIONS_MAP[fieldId];
+    if (!cond) return true;
+    if (!businessTypeValue) return true;
+    return cond.some(t => businessTypeValue.toLowerCase().includes(t));
+  }
+
+  // Calculate stats using only active sections and visible fields
+  const allRequiredFields = activeSections.flatMap(s => s.fields.filter(f => f.required && fieldVisible(f.id)));
+  const allFields = activeSections.flatMap(s => s.fields.filter(f => fieldVisible(f.id)));
   const completedRequired = allRequiredFields.filter(f => extractedData[f.id]);
   const completedAll = allFields.filter(f => extractedData[f.id]);
   const missingRequired = allRequiredFields.filter(f => !extractedData[f.id]);
@@ -2361,9 +2388,9 @@ function renderDashboard() {
   }
 
   // ── Next Call Checklist ──────────────────────────────────────
-  const allMissingFields = SCHEMA.sections.flatMap(s =>
+  const allMissingFields = activeSections.flatMap(s =>
     s.fields
-      .filter(f => !extractedData[f.id] && !['fileAttachment','multiFileAttachments'].includes(f.type))
+      .filter(f => !extractedData[f.id] && !['fileAttachment','multiFileAttachments'].includes(f.type) && fieldVisible(f.id))
       .map(f => ({ ...f, sectionTitle: s.title }))
   );
 
@@ -2429,9 +2456,26 @@ function renderDashboard() {
     </div>`;
   }
 
+  // Field-level conditions based on business type
+  // Keys = fieldId, Values = array of business types that should SEE this field
+  const FIELD_CONDITIONS = {
+    'doYouHaveAnyPartners': ['For Profit Business (Corporation, LLC, etc.)', 'Sole Proprietor'],
+    'nameOfPartner':        ['For Profit Business (Corporation, LLC, etc.)', 'Sole Proprietor'],
+    // Sole proprietor specific — no company registration fields needed
+    'companysAccountingFi': null, // shown for all
+  };
+
+  function isFieldVisible(field) {
+    const cond = FIELD_CONDITIONS[field.id];
+    if (!cond) return true; // no condition = always visible
+    if (!businessTypeValue) return true; // type unknown = show all
+    return cond.some(t => businessTypeValue.toLowerCase().includes(t.toLowerCase()));
+  }
+
   // Sections
-  SCHEMA.sections.forEach(section => {
-    const sectionFields = section.fields;
+  activeSections.forEach(section => {
+    const sectionFields = section.fields.filter(f => isFieldVisible(f));
+    if (sectionFields.length === 0) return;
     const filledCount = sectionFields.filter(f => extractedData[f.id]).length;
     const requiredCount = sectionFields.filter(f => f.required).length;
     const filledRequired = sectionFields.filter(f => f.required && extractedData[f.id]).length;
@@ -2444,7 +2488,6 @@ function renderDashboard() {
     html += `<div class="section-block" id="section-${section.id}">
       <div class="section-heading">
         <h2>${section.title}</h2>
-        ${section.condition ? `<span style="font-size:10px; color:var(--text-dimmer)">if ${section.condition}</span>` : ''}
         <span class="section-tag ${tagClass}">${tagText}</span>
       </div>
       <table class="field-table">
@@ -2606,8 +2649,18 @@ function saveEdit(fieldId) {
 function renderNav() {
   const nav = document.getElementById('sectionNav');
   nav.innerHTML = '';
-  
-  SCHEMA.sections.forEach(section => {
+
+  const bv = extractedData['whatTypeOfCompanyAre']?.value || '';
+  const isNP = bv.toLowerCase().includes('not-for-profit') || bv.toLowerCase().includes('nonprofit');
+  const isFP = bv.toLowerCase().includes('for profit') || bv.toLowerCase().includes('corporation') || bv.toLowerCase().includes('sole proprietor');
+
+  const navSections = SCHEMA.sections.filter(s => {
+    if (!s.condition) return true;
+    if (isFP && !isNP) return false;
+    return true;
+  });
+
+  navSections.forEach(section => {
     const sectionFields = section.fields;
     const filledCount = sectionFields.filter(f => extractedData[f.id]).length;
     const requiredCount = sectionFields.filter(f => f.required).length;
