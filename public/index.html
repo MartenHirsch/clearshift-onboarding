@@ -463,7 +463,27 @@
     white-space: nowrap;
   }
 
-  .field-status-badge.filled { background: var(--complete-dim); color: var(--complete); border: 1px solid var(--accent-dim); }
+  .field-status-badge.pep-missing {
+    background: rgba(251,191,36,0.12);
+    color: #fbbf24;
+    border: 1px solid rgba(251,191,36,0.3);
+  }
+
+  .pep-row td { background: rgba(251,191,36,0.04); }
+
+  .pep-flag {
+    display: inline-block;
+    font-size: 8px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: rgba(251,191,36,0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(251,191,36,0.3);
+    margin-left: 6px;
+    vertical-align: middle;
+    letter-spacing: 0.05em;
+  }
   .field-status-badge.required-missing { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(255,107,107,0.2); }
   .field-status-badge.optional-missing { background: var(--surface2); color: var(--text-dimmer); border: 1px solid var(--border); }
 
@@ -667,6 +687,432 @@
     padding: 8px;
     font-style: italic;
   }
+
+  /* ===== APPLICANT BAR ===== */
+  .applicant-bar {
+    flex: 1;
+    max-width: 420px;
+    margin: 0 24px;
+    position: relative;
+  }
+
+  .applicant-search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 0 12px;
+    position: relative;
+  }
+
+  .applicant-search-icon { font-size: 13px; color: var(--text-dimmer); flex-shrink: 0; }
+
+  .applicant-search-input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 10px 0;
+  }
+
+  .applicant-search-input::placeholder { color: var(--text-dimmer); }
+
+  .applicant-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0; right: 0;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    z-index: 300;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    max-height: 280px;
+    overflow-y: auto;
+  }
+
+  .applicant-dropdown-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: background 0.12s;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .applicant-dropdown-item:last-child { border-bottom: none; }
+  .applicant-dropdown-item:hover { background: var(--accent-glow); }
+
+  .applicant-dropdown-item-name { font-size: 12px; color: var(--text); }
+  .applicant-dropdown-item-date { font-size: 10px; color: var(--text-dimmer); }
+
+  .applicant-dropdown-new {
+    padding: 10px 14px;
+    cursor: pointer;
+    color: var(--accent);
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-top: 1px solid var(--border);
+  }
+
+  .applicant-dropdown-new:hover { background: var(--accent-glow); }
+
+  .applicant-dropdown-empty {
+    padding: 14px;
+    font-size: 11px;
+    color: var(--text-dimmer);
+    text-align: center;
+  }
+
+  .applicant-current {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 8px 14px;
+  }
+
+  .applicant-current-icon { font-size: 14px; }
+  .applicant-current-name { font-size: 12px; color: var(--text); flex: 1; font-weight: 500; }
+
+  .applicant-action-btn {
+    background: none;
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    color: var(--text-dim);
+    font-size: 11px;
+    padding: 3px 8px;
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    transition: all 0.15s;
+  }
+
+  .applicant-action-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .save-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    color: var(--text-dim);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 7px 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .save-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+  .save-btn.saved { border-color: var(--accent-dim); color: var(--accent); }
+
+  /* ===== INLINE FIELD EDITING ===== */
+  .field-value-wrap {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .field-value-text { flex: 1; }
+
+  .edit-field-btn {
+    flex-shrink: 0;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-dimmer);
+    font-size: 10px;
+    padding: 2px 6px;
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    transition: all 0.15s;
+    opacity: 0;
+  }
+
+  tr:hover .edit-field-btn { opacity: 1; }
+  .edit-field-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .field-edit-form {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .field-edit-input {
+    flex: 1;
+    min-width: 120px;
+    background: var(--bg);
+    border: 1.5px solid var(--accent-dim);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 5px 8px;
+    outline: none;
+  }
+
+  .field-edit-input:focus { border-color: var(--accent); }
+
+  .field-edit-select {
+    flex: 1;
+    min-width: 120px;
+    background: var(--bg);
+    border: 1.5px solid var(--accent-dim);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 5px 8px;
+    outline: none;
+  }
+
+  .field-edit-save {
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: #0d0f0e;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .field-edit-save:hover { background: #7fffb8; }
+
+  .field-edit-cancel {
+    background: none;
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    color: var(--text-dim);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 5px 8px;
+    cursor: pointer;
+  }
+
+  .field-manual-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(167,139,250,0.1);
+    color: #a78bfa;
+    border: 1px solid rgba(167,139,250,0.2);
+    margin-top: 3px;
+  }
+  .checklist-block {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-left: 3px solid #a78bfa;
+    border-radius: var(--radius);
+    margin-bottom: 28px;
+    overflow: hidden;
+  }
+
+  .checklist-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+
+  .checklist-header:hover { background: rgba(167,139,250,0.05); }
+
+  .checklist-header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .checklist-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  .checklist-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .checklist-subtitle {
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .checklist-toggle {
+    font-size: 11px;
+    color: #a78bfa;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid rgba(167,139,250,0.3);
+    border-radius: 20px;
+    transition: all 0.15s;
+  }
+
+  .checklist-header:hover .checklist-toggle {
+    background: rgba(167,139,250,0.1);
+  }
+
+  .checklist-body {
+    border-top: 1px solid var(--border);
+    padding: 20px;
+  }
+
+  .cl-intro {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+    padding: 10px 14px;
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    border-left: 2px solid #a78bfa;
+  }
+
+  .cl-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .cl-group-title {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dimmer);
+    font-weight: 500;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .cl-item {
+    display: flex;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    transition: background 0.15s;
+    cursor: pointer;
+  }
+
+  .cl-item:hover { background: var(--surface2); }
+
+  .cl-item-checked {
+    opacity: 0.45;
+  }
+
+  .cl-item-checked .cl-question {
+    text-decoration: line-through;
+    color: var(--text-dimmer);
+  }
+
+  .cl-check { flex-shrink: 0; padding-top: 2px; }
+
+  .cl-checkbox {
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--border2);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+
+  .cl-checkbox.checked {
+    background: #a78bfa;
+    border-color: #a78bfa;
+  }
+
+  .cl-checkbox.checked::after {
+    content: '✓';
+    font-size: 10px;
+    color: white;
+    font-weight: 700;
+  }
+
+  .cl-body { flex: 1; }
+
+  .cl-question {
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.5;
+    margin-bottom: 4px;
+  }
+
+  .cl-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .cl-badge {
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-weight: 500;
+  }
+
+  .cl-badge.required {
+    background: var(--danger-dim);
+    color: var(--danger);
+    border: 1px solid rgba(255,107,107,0.2);
+  }
+
+  .cl-badge.optional {
+    background: var(--surface2);
+    color: var(--text-dimmer);
+    border: 1px solid var(--border);
+  }
+
+  .cl-field-name {
+    font-size: 10px;
+    color: var(--text-dimmer);
+  }
+
+  .cl-footer {
+    margin-top: 20px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .cl-reset-btn {
+    font-size: 10px;
+    background: none;
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    color: var(--text-dimmer);
+    padding: 4px 10px;
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    transition: all 0.15s;
+  }
+
+  .cl-reset-btn:hover { border-color: var(--text-dim); color: var(--text); }
 
   .section-block {
     margin-bottom: 32px;
@@ -893,14 +1339,32 @@
       <div class="logo-mark">C</div>
       <div class="logo-name">CLEARSHIFT</div>
     </div>
+
+    <!-- Applicant search / current indicator -->
+    <div class="applicant-bar">
+      <div class="applicant-search-wrap" id="applicantSearchWrap">
+        <span class="applicant-search-icon">🔍</span>
+        <input type="text" id="applicantSearchInput" class="applicant-search-input"
+          placeholder="Search applicant by business name…" autocomplete="off">
+        <div class="applicant-dropdown" id="applicantDropdown" style="display:none"></div>
+      </div>
+      <div class="applicant-current" id="applicantCurrent" style="display:none">
+        <span class="applicant-current-icon">🏢</span>
+        <span id="applicantCurrentName" class="applicant-current-name">—</span>
+        <button class="applicant-action-btn" onclick="newApplicant()" title="New applicant">＋ New</button>
+      </div>
+    </div>
+
     <div class="header-meta">
-      <span>Customer Onboarding Portal</span>
       <div class="progress-pill">
         <span id="progressText">0% complete</span>
         <div class="progress-bar-mini">
           <div class="progress-bar-mini-fill" id="progressFill" style="width:0%"></div>
         </div>
       </div>
+      <button class="save-btn" id="saveBtn" onclick="saveApplicant()" title="Save applicant data">
+        💾 Save
+      </button>
     </div>
   </header>
 
@@ -1147,13 +1611,173 @@ const SCHEMA = {
 // ===== STATE =====
 let uploadedFiles = [];
 let extractedData = {}; // fieldId -> { value, source }
-let isProcessing = false;
+let isProcessing  = false;
+let currentApplicantId   = null;
+let currentApplicantName = null;
+let unsavedChanges = false;
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
   setupUpload();
   renderNav();
 });
+
+// ===== PROGRESS UPDATE (lightweight — no full re-render) =====
+function updateProgress() {
+  const allRequired = SCHEMA.sections.flatMap(s => s.fields.filter(f => f.required));
+  const filled      = allRequired.filter(f => extractedData[f.id]);
+  const pct = allRequired.length > 0 ? Math.round((filled.length / allRequired.length) * 100) : 0;
+  document.getElementById('progressText').textContent = `${pct}% complete`;
+  document.getElementById('progressFill').style.width = pct + '%';
+  renderNav();
+}
+
+// ===== APPLICANT MANAGEMENT =====
+function markUnsaved() {
+  unsavedChanges = true;
+  const btn = document.getElementById('saveBtn');
+  if (btn) { btn.textContent = '💾 Save*'; btn.style.color = 'var(--warn)'; }
+}
+
+function markSaved() {
+  unsavedChanges = false;
+  const btn = document.getElementById('saveBtn');
+  if (btn) { btn.textContent = '💾 Save'; btn.style.color = ''; btn.classList.add('saved'); }
+  setTimeout(() => { if (btn) btn.classList.remove('saved'); }, 2000);
+}
+
+async function saveApplicant() {
+  // Determine name from extracted data or prompt
+  let name = extractedData['companyNameInEnglish']?.value || currentApplicantName;
+  if (!name) {
+    name = window.prompt('Enter a name for this applicant (business name):');
+    if (!name) return;
+  }
+
+  const payload = { name, fields: extractedData };
+
+  try {
+    let res;
+    if (currentApplicantId) {
+      res = await fetch(`/api/applicants/${currentApplicantId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } else {
+      res = await fetch('/api/applicants', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    }
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    currentApplicantId   = data.id;
+    currentApplicantName = data.name;
+    showApplicantCurrent(data.name);
+    markSaved();
+  } catch(e) {
+    alert('Save failed: ' + e.message);
+  }
+}
+
+function showApplicantCurrent(name) {
+  document.getElementById('applicantSearchWrap').style.display = 'none';
+  document.getElementById('applicantCurrent').style.display    = 'flex';
+  document.getElementById('applicantCurrentName').textContent  = name;
+}
+
+function newApplicant() {
+  if (unsavedChanges && !confirm('You have unsaved changes. Start a new applicant anyway?')) return;
+  currentApplicantId   = null;
+  currentApplicantName = null;
+  extractedData        = {};
+  unsavedChanges       = false;
+  uploadedFiles        = [];
+  audioFiles           = [];
+  renderFileList();
+  renderAudioFileList();
+  document.getElementById('transcriptSection').style.display = 'none';
+  document.getElementById('transcriptInput').value = '';
+  document.getElementById('applicantCurrent').style.display    = 'none';
+  document.getElementById('applicantSearchWrap').style.display = 'flex';
+  document.getElementById('applicantSearchInput').value = '';
+  document.getElementById('mainContent').innerHTML = `<div class="empty-state" id="emptyState">
+    <div class="big-icon">📋</div>
+    <h3>No data collected yet</h3>
+    <p>Upload telephone recordings, PDFs, Word docs, or any documents containing customer information.</p>
+  </div>`;
+  renderNav();
+  updateProgress();
+}
+
+async function loadApplicant(id) {
+  try {
+    const res  = await fetch(`/api/applicants/${id}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    currentApplicantId   = data.id;
+    currentApplicantName = data.name;
+    extractedData        = data.fields || {};
+    unsavedChanges       = false;
+
+    showApplicantCurrent(data.name);
+    document.getElementById('applicantDropdown').style.display = 'none';
+
+    // Re-render dashboard with loaded data
+    renderDashboard();
+    markSaved();
+  } catch(e) {
+    alert('Load failed: ' + e.message);
+  }
+}
+
+// Applicant search
+let searchTimer = null;
+document.addEventListener('DOMContentLoaded', () => {
+  const input    = document.getElementById('applicantSearchInput');
+  const dropdown = document.getElementById('applicantDropdown');
+
+  input.addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => searchApplicants(input.value), 250);
+  });
+
+  input.addEventListener('focus', () => searchApplicants(input.value));
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#applicantSearchWrap')) {
+      dropdown.style.display = 'none';
+    }
+  });
+});
+
+async function searchApplicants(q) {
+  const dropdown = document.getElementById('applicantDropdown');
+  try {
+    const res  = await fetch(`/api/applicants/search?q=${encodeURIComponent(q)}`);
+    const rows = await res.json();
+    if (!rows.length && !q) {
+      dropdown.innerHTML = `<div class="applicant-dropdown-empty">No saved applicants yet</div>
+        <div class="applicant-dropdown-new" onclick="saveApplicant()">＋ Save current as new applicant</div>`;
+    } else if (!rows.length) {
+      dropdown.innerHTML = `<div class="applicant-dropdown-empty">No results for "${escHtml(q)}"</div>
+        <div class="applicant-dropdown-new" onclick="saveApplicant()">＋ Save as new applicant</div>`;
+    } else {
+      dropdown.innerHTML = rows.map(r => `
+        <div class="applicant-dropdown-item" onclick="loadApplicant(${r.id})">
+          <span class="applicant-dropdown-item-name">${escHtml(r.name)}</span>
+          <span class="applicant-dropdown-item-date">${new Date(r.updated_at).toLocaleDateString()}</span>
+        </div>`).join('') +
+        `<div class="applicant-dropdown-new" onclick="saveApplicant()">＋ Save current as new applicant</div>`;
+    }
+    dropdown.style.display = 'block';
+  } catch(e) {
+    console.error('Search failed:', e);
+  }
+}
 
 // ===== UPLOAD =====
 let audioFiles = []; // separate list for audio uploads
@@ -1354,19 +1978,28 @@ async function analyzeFiles() {
   setStep('send', 'active');
   setProgress(35, `Sending to Claude…`);
 
-  const systemPrompt = `You are a data extraction assistant for a financial services onboarding system. Extract customer information from documents and call transcripts, and map it to the provided field list. Documents may be in any language including Hebrew and Arabic — always extract and return values in English.
+  const systemPrompt = `You are a strict data extraction assistant for a financial services onboarding system. Your ONLY job is to find information that is EXPLICITLY stated in the provided documents. Documents may be in any language including Hebrew and Arabic — always return values in English.
 
 CRITICAL: Respond with ONLY a raw JSON object. No prose, no markdown, no code fences. Start your response with { and end with }.
 
 JSON structure:
 {"extracted":{"<fieldId>":{"value":"<extracted value>","confidence":"high|medium|low"}},"summary":"<one sentence>"}
 
-Rules:
-- Only include fields where you clearly found information
+STRICT RULES — VIOLATIONS ARE SERIOUS:
+- ONLY include a field if the EXACT information appears word-for-word in the document
+- NEVER guess, infer, assume, or make up values — not even plausible ones
+- NEVER use placeholder values like "John Doe", "N/A", "Unknown", or example data
+- NEVER fill in bank details, names, or numbers that are not explicitly in the document
+- If a field's information is not clearly stated, DO NOT include it at all
 - For select fields, value must exactly match one of the provided options
-- Translate or transliterate non-English values into English
-- Do not invent or infer data not present in the documents
-- If nothing useful is found, return {"extracted":{},"summary":"No extractable onboarding data found"}`;
+- If nothing is found, return {"extracted":{},"summary":"No extractable onboarding data found"}
+- When in doubt, leave it out
+
+PEP RULE — CRITICAL COMPLIANCE REQUIREMENT:
+- The field "areYouAPep" (Is any owner/manager/UBO a PEP?) must NEVER be filled unless the client has EXPLICITLY and DIRECTLY stated "Yes", "No", or "Uncertain" in their own words
+- Do NOT infer "No" from silence, absence of mention, or any indirect statement
+- Do NOT fill this field based on context or assumption
+- If the PEP question has not been directly answered in the document, leave "areYouAPep" out entirely`;
 
   const fieldSummary = SCHEMA.sections.map(s =>
     `${s.title}:\n` + s.fields.map(f =>
@@ -1431,6 +2064,14 @@ Rules:
     if (data.extracted) {
       Object.entries(data.extracted).forEach(([k, v]) => {
         if (v && v.value) {
+          // PEP guard: only accept explicit Yes/No/Uncertain — never inferred values
+          if (k === 'areYouAPep') {
+            const val = v.value.trim();
+            const allowed = ['Yes', 'No', 'Uncertain'];
+            const matched = allowed.find(a => a.toLowerCase() === val.toLowerCase());
+            if (!matched) return; // reject anything that isn't an explicit answer
+            v.value = matched; // normalise capitalisation
+          }
           extractedData[k] = {
             value: v.value,
             confidence: v.confidence || 'medium',
@@ -1456,7 +2097,12 @@ Rules:
 
     setStep('render', 'done');
     setProgress(100, fieldsFound > 0 ? `Done — ${fieldsFound} fields extracted` : 'Done — no data found in documents');
+    if (fieldsFound > 0) markUnsaved();
 
+    // Auto-set applicant name from extracted business name if not yet set
+    if (!currentApplicantName && extractedData['companyNameInEnglish']?.value) {
+      currentApplicantName = extractedData['companyNameInEnglish'].value;
+    }
     await new Promise(r => setTimeout(r, 600));
     hideProgress();
 
@@ -1524,6 +2170,130 @@ async function readFile(file) {
   return { kind: 'text', content: `[File: ${file.name} — unsupported format. Convert to PDF or TXT.]` };
 }
 
+// ===== CHECKLIST HELPERS =====
+const clChecked = new Set();
+
+function buildQuestion(field) {
+  const t = field.title.toLowerCase();
+  const opts = field.options ? ` (${field.options.slice(0, 3).join(' / ')}${field.options.length > 3 ? '…' : ''})` : '';
+
+  // Map specific field IDs to natural questions
+  const questionMap = {
+    whatTypeOfCompanyAre:    'Is the business a corporation/LLC, sole proprietor, or non-profit?',
+    companyNameInEnglish:    'What is the full legal name of the business?',
+    aliasadditiona_afuzb:    'Does the business trade under any other names or DBAs?',
+    doYouHaveAWebsiteOrS:    'Does the business have a website or social media presence?',
+    website:                 'What is the business website URL?',
+    linkedinOrSocialMedi:    'What is the LinkedIn or social media page URL?',
+    sinceYouDontHaveAWeb:    'How do you currently reach your customers if not online?',
+    companysAccountingFi:    'Who is your business accountant?',
+    replanguage:             'What is your preferred language for communications — English or Hebrew?',
+    doYouHaveAnyPartners:    'Are there any business partners in the company?',
+    nameOfPartner:           'What are the full names of all business partners?',
+    businessCategory:        'What is the primary source of revenue — goods, services, donations, or investments?',
+    whatBusinessSectorsu:    'What industry or business sector does the company operate in?',
+    describeTheMainProdu:    'Can you describe the business in detail — what do you sell or provide?',
+    numberOfEmployees:       'Approximately how many employees does the business have?',
+    annualRevenueOfTheCo:    'What are the estimated annual gross revenues in USD?',
+    whatWillYourEstimate:    'How much volume do you expect to process through Clearshift annually (USD)?',
+    doesTheCompanyEngage:    'Does the business operate in any regulated or licensed industries?',
+    pleaseAttachCopiesTo:    'What special licenses or permits does the business hold?',
+    bankingHistory:          'Has the business ever had a bank account closed or terminated for AML/compliance reasons?',
+    isTheCompanyInvolved:    'Does the business operate in any of these industries: gambling, crypto, weapons, adult content, pharmaceuticals, or real estate?',
+    controlledIndustries:    'Can you describe the nature of any regulated industry activities?',
+    newQuestion151:          'Which Clearshift services are you planning to use?',
+    willYouBeUsingClears:    'Will you mainly be getting paid by others, paying others, or both?',
+    pleaseIndicateCountr:    'How many countries are involved in your payment activity?',
+    country1:                'What is the primary country you send or receive payments to/from?',
+    secondCountry:           'Is there a second country involved in your payments?',
+    '3rdCountry':            'Is there a third country involved in your payments?',
+    '4thCountry':            'Is there a fourth country involved?',
+    pleaseIndicateTheMos:    'What is the nature of the payments — sales revenue, vendor payments, investor transfers, or other?',
+    nextRelevantPayment:     'When do you expect to make your first payment through Clearshift?',
+    willClearshiftBeRece:    'Will Clearshift be receiving third-party payments on your behalf?',
+    whenClearshiftReceiv:    'Would you like Clearshift to automatically convert and deliver funds when received?',
+    areYouAPep:              'Is any owner, manager, or beneficial owner a politically exposed person (PEP)?',
+    namesurnameOfPep:        'What is the full name of the PEP individual?',
+    positionOfPep:           'What government position does the PEP hold?',
+    countryOfPep:            'Which country is the PEP associated with?',
+    detailedDescriptionO:    'Can you describe the nature of the PEP relationship?',
+    countryWhereMyPrimar:    'In which country is your primary bank account — Israel, EU, or USA?',
+    domesticacctnames:       'What name(s) appear on the Israeli bank account?',
+    israelibank:             'Do you have an IBAN or a branch code + account number for the Israeli account?',
+    pleaseSelectIsraeliB:    'Which Israeli bank holds the account?',
+    domesticbankbranchnumber:'What is the branch code for the Israeli bank?',
+    domesticbankaccountnumber:'What is the account number for the Israeli bank?',
+    linkedaccountiban:       'What is the IBAN for the Israeli bank account?',
+    newQuestion2013:         'What name appears on the US bank account?',
+    bankName:                'What is the name of the US bank?',
+    routingNumber:           'Is the routing number ACH, Fedwire, or dual-use?',
+    achRoutingNumber:        'What is the ACH routing number?',
+    fedwireRoutingNumber:    'What is the Fedwire routing number?',
+    dualUseRoutingNumber:    'What is the dual-use routing number?',
+    nameOfOwnersAsItAppe:    'What name(s) appear on the EU bank account?',
+    bankName_l4i6i:          'What is the name of the EU bank?',
+    ibanNumber:              'What is the EU IBAN number?',
+    describeYourNonProfi:    'Can you describe the non-profit mission and the geographic area served?',
+    estimatedAnnualBudge:    'What is the estimated annual budget of the non-profit (USD)?',
+    doYouHavePaidEmploye:    'Does the non-profit have paid employees?',
+    numberOfPaidEmployee:    'How many paid employees does the non-profit have?',
+    numberOfVolunteers:      'How many volunteers does the non-profit have?',
+    passthroughNonprofit:    'Does the non-profit distribute more than 50% of funds to other organizations?',
+    publicProtestsOrPriv:    'Does the non-profit arrange public protests or hire lobbyists?',
+    doYouAcceptCashDonat:    'Does the non-profit accept cash donations over $100?',
+    ifCashDonationsAreAc:    'What is the limit on cash donations accepted?',
+    howDoYouRaiseYourCha:    'How does the non-profit raise charitable funds?',
+  };
+
+  if (questionMap[field.id]) return questionMap[field.id];
+
+  // Fallback: generate from title
+  if (field.type === 'select' || field.type === 'multiSelect') {
+    return `What is the "${field.title}"?${opts}`;
+  }
+  if (field.type === 'countrySelect') {
+    return `Which country for "${field.title}"?`;
+  }
+  if (field.type === 'dateTime') {
+    return `What is the date for "${field.title}"?`;
+  }
+  return `Can you provide the "${field.title}"?`;
+}
+
+function toggleChecklist() {
+  const body  = document.getElementById('checklistBody');
+  const arrow = document.getElementById('checklistArrow');
+  const toggle = document.getElementById('checklistToggle');
+  const isHidden = body.style.display === 'none';
+  body.style.display  = isHidden ? 'block' : 'none';
+  arrow.textContent   = isHidden ? '▲' : '▼';
+  toggle.innerHTML    = `<span id="checklistArrow">${isHidden ? '▲' : '▼'}</span> ${isHidden ? 'Hide' : 'Show'}`;
+}
+
+function toggleCheck(fieldId) {
+  const box = document.getElementById(`chk-${fieldId}`);
+  const item = document.getElementById(`cl-${fieldId}`);
+  if (!box) return;
+  if (clChecked.has(fieldId)) {
+    clChecked.delete(fieldId);
+    box.classList.remove('checked');
+    item.classList.remove('cl-item-checked');
+  } else {
+    clChecked.add(fieldId);
+    box.classList.add('checked');
+    item.classList.add('cl-item-checked');
+  }
+  document.getElementById('clCheckedCount').textContent = clChecked.size;
+}
+
+function resetChecklist() {
+  clChecked.clear();
+  document.querySelectorAll('.cl-checkbox').forEach(b => b.classList.remove('checked'));
+  document.querySelectorAll('.cl-item').forEach(i => i.classList.remove('cl-item-checked'));
+  const el = document.getElementById('clCheckedCount');
+  if (el) el.textContent = '0';
+}
+
 // ===== RENDER =====
 function renderDashboard() {
   const main = document.getElementById('mainContent');
@@ -1587,6 +2357,75 @@ function renderDashboard() {
     </div>`;
   }
 
+  // ── Next Call Checklist ──────────────────────────────────────
+  const allMissingFields = SCHEMA.sections.flatMap(s =>
+    s.fields
+      .filter(f => !extractedData[f.id] && !['fileAttachment','multiFileAttachments'].includes(f.type))
+      .map(f => ({ ...f, sectionTitle: s.title }))
+  );
+
+  if (allMissingFields.length > 0) {
+    const requiredItems  = allMissingFields.filter(f => f.required);
+    const optionalItems  = allMissingFields.filter(f => !f.required);
+    const totalItems     = allMissingFields.length;
+
+    // Group by section for display
+    const bySectionMap = {};
+    allMissingFields.forEach(f => {
+      if (!bySectionMap[f.sectionTitle]) bySectionMap[f.sectionTitle] = [];
+      bySectionMap[f.sectionTitle].push(f);
+    });
+
+    const checklistRows = Object.entries(bySectionMap).map(([sectionTitle, fields]) => {
+      const rows = fields.map(f => {
+        const badge = f.required
+          ? `<span class="cl-badge required">Required</span>`
+          : `<span class="cl-badge optional">Optional</span>`;
+        const question = buildQuestion(f);
+        return `<div class="cl-item" id="cl-${f.id}">
+          <div class="cl-check" onclick="toggleCheck('${f.id}')">
+            <div class="cl-checkbox" id="chk-${f.id}"></div>
+          </div>
+          <div class="cl-body">
+            <div class="cl-question">${question}</div>
+            <div class="cl-meta">${badge}<span class="cl-field-name">${f.title}</span></div>
+          </div>
+        </div>`;
+      }).join('');
+
+      return `<div class="cl-group">
+        <div class="cl-group-title">${sectionTitle}</div>
+        ${rows}
+      </div>`;
+    }).join('');
+
+    html += `<div class="checklist-block" id="checklistBlock">
+      <div class="checklist-header" onclick="toggleChecklist()">
+        <div class="checklist-header-left">
+          <span class="checklist-icon">📋</span>
+          <div>
+            <div class="checklist-title">Next Call Checklist</div>
+            <div class="checklist-subtitle">${requiredItems.length} required · ${optionalItems.length} optional · ${totalItems} questions to ask</div>
+          </div>
+        </div>
+        <div class="checklist-toggle" id="checklistToggle">
+          <span id="checklistArrow">▼</span> Show
+        </div>
+      </div>
+      <div class="checklist-body" id="checklistBody" style="display:none">
+        <div class="cl-intro">
+          Ask these questions during your next call to complete the onboarding profile.
+          Check off each item as you collect the information.
+        </div>
+        <div class="cl-sections">${checklistRows}</div>
+        <div class="cl-footer">
+          <span id="clCheckedCount">0</span> of ${totalItems} items checked
+          <button class="cl-reset-btn" onclick="resetChecklist()">Reset all</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
   // Sections
   SCHEMA.sections.forEach(section => {
     const sectionFields = section.fields;
@@ -1625,39 +2464,140 @@ function renderDashboard() {
 }
 
 function renderFieldRow(field) {
-  const data = extractedData[field.id];
+  const data   = extractedData[field.id];
   const isFile = ['fileAttachment', 'multiFileAttachments'].includes(field.type);
-  
+  const isPep  = field.id === 'areYouAPep';
+  const hasOpts = field.options && field.options.length > 0;
+
   let valueHtml, statusHtml;
 
   if (data) {
     let displayVal = data.value;
     if (isFile) displayVal = '📎 Document provided';
-    
-    valueHtml = `<div class="field-value filled">${escHtml(displayVal)}</div>
-      ${data.sources ? `<div class="source-tag">📄 ${data.sources.join(', ')}</div>` : ''}`;
+    const manualTag = data.manual ? `<div class="field-manual-tag">✏ Manually entered</div>` : '';
+    const sourceTag = data.sources && !data.manual ? `<div class="source-tag">📄 ${data.sources.join(', ')}</div>` : '';
+    valueHtml = `<div class="field-value-wrap">
+      <div class="field-value-text">
+        <div class="field-value filled" id="fv-${field.id}">${escHtml(displayVal)}</div>
+        ${sourceTag}${manualTag}
+      </div>
+      ${!isFile ? `<button class="edit-field-btn" onclick="startEdit('${field.id}')">✏ Edit</button>` : ''}
+    </div>
+    <div id="fe-${field.id}" style="display:none">${buildEditForm(field)}</div>`;
     statusHtml = `<span class="field-status-badge filled">✓ Filled</span>`;
   } else if (isFile) {
     valueHtml = `<div class="field-value optional-missing">No file uploaded</div>`;
     statusHtml = `<span class="field-status-badge optional-missing">— Upload required</span>`;
+  } else if (isPep) {
+    valueHtml = `<div class="field-value-wrap">
+      <div class="field-value-text">
+        <div class="field-value missing" id="fv-${field.id}">Must be explicitly confirmed by client</div>
+      </div>
+      <button class="edit-field-btn" onclick="startEdit('${field.id}')">✏ Enter</button>
+    </div>
+    <div id="fe-${field.id}" style="display:none">${buildEditForm(field)}</div>`;
+    statusHtml = `<span class="field-status-badge pep-missing">🔒 Compliance required</span>`;
   } else if (field.required) {
-    valueHtml = `<div class="field-value missing">Not found in documents</div>`;
-    statusHtml = `<span class="field-status-badge required-missing">⚠ Required</span>`;
+    valueHtml = `<div class="field-value-wrap">
+      <div class="field-value-text">
+        <div class="field-value missing" id="fv-${field.id}">Not found in documents</div>
+      </div>
+      <button class="edit-field-btn" onclick="startEdit('${field.id}')">✏ Enter</button>
+    </div>
+    <div id="fe-${field.id}" style="display:none">${buildEditForm(field)}</div>`;
+    statusHtml = `<span class="field-status-badge required-missing" id="fs-${field.id}">⚠ Required</span>`;
   } else {
-    valueHtml = `<div class="field-value optional-missing">Not provided</div>`;
-    statusHtml = `<span class="field-status-badge optional-missing">— Optional</span>`;
+    valueHtml = `<div class="field-value-wrap">
+      <div class="field-value-text">
+        <div class="field-value optional-missing" id="fv-${field.id}">Not provided</div>
+      </div>
+      <button class="edit-field-btn" onclick="startEdit('${field.id}')">✏ Enter</button>
+    </div>
+    <div id="fe-${field.id}" style="display:none">${buildEditForm(field)}</div>`;
+    statusHtml = `<span class="field-status-badge optional-missing" id="fs-${field.id}">— Optional</span>`;
   }
 
-  return `<tr id="field-${field.id}">
+  return `<tr id="field-${field.id}" ${isPep && !data ? 'class="pep-row"' : ''}>
     <td>
       <div class="field-name">${escHtml(field.title)}
         <span class="field-required ${field.required ? 'yes' : 'no'}" title="${field.required ? 'Required' : 'Optional'}"></span>
+        ${isPep ? '<span class="pep-flag">PEP</span>' : ''}
       </div>
       <div class="field-type-badge">${field.type}</div>
     </td>
     <td>${valueHtml}</td>
-    <td>${statusHtml}</td>
+    <td id="fs-${field.id}">${statusHtml}</td>
   </tr>`;
+}
+
+function buildEditForm(field) {
+  const cur = extractedData[field.id]?.value || '';
+  const escaped = escHtml(cur);
+
+  if (field.options && field.options.length > 0) {
+    const opts = field.options.map(o =>
+      `<option value="${escHtml(o)}" ${o === cur ? 'selected' : ''}>${escHtml(o)}</option>`
+    ).join('');
+    return `<div class="field-edit-form">
+      <select class="field-edit-select" id="fei-${field.id}">
+        <option value="">— Select —</option>${opts}
+      </select>
+      <button class="field-edit-save" onclick="saveEdit('${field.id}')">Save</button>
+      <button class="field-edit-cancel" onclick="cancelEdit('${field.id}')">Cancel</button>
+    </div>`;
+  }
+
+  return `<div class="field-edit-form">
+    <input type="text" class="field-edit-input" id="fei-${field.id}" value="${escaped}"
+      placeholder="Enter value…"
+      onkeydown="if(event.key==='Enter') saveEdit('${field.id}'); if(event.key==='Escape') cancelEdit('${field.id}')">
+    <button class="field-edit-save" onclick="saveEdit('${field.id}')">Save</button>
+    <button class="field-edit-cancel" onclick="cancelEdit('${field.id}')">Cancel</button>
+  </div>`;
+}
+
+function startEdit(fieldId) {
+  document.getElementById(`fe-${fieldId}`).style.display = 'block';
+  const input = document.getElementById(`fei-${fieldId}`);
+  if (input) setTimeout(() => input.focus(), 50);
+}
+
+function cancelEdit(fieldId) {
+  document.getElementById(`fe-${fieldId}`).style.display = 'none';
+}
+
+function saveEdit(fieldId) {
+  const input = document.getElementById(`fei-${fieldId}`);
+  if (!input) return;
+  const val = input.value.trim();
+
+  // PEP guard on manual entry too
+  if (fieldId === 'areYouAPep') {
+    const allowed = ['Yes', 'No', 'Uncertain'];
+    const matched = allowed.find(a => a.toLowerCase() === val.toLowerCase());
+    if (!matched) {
+      input.style.borderColor = 'var(--danger)';
+      input.placeholder = 'Must be: Yes, No, or Uncertain';
+      return;
+    }
+  }
+
+  if (val) {
+    extractedData[fieldId] = { value: val, confidence: 'high', manual: true, sources: [] };
+  } else {
+    delete extractedData[fieldId];
+  }
+
+  cancelEdit(fieldId);
+  markUnsaved();
+  // Re-render just this row inline
+  const field = SCHEMA.sections.flatMap(s => s.fields).find(f => f.id === fieldId);
+  if (field) {
+    const row = document.getElementById(`field-${fieldId}`);
+    if (row) row.outerHTML = renderFieldRow(field);
+  }
+  // Update nav dots and progress
+  updateProgress();
 }
 
 function renderNav() {

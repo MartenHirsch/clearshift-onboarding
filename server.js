@@ -5,6 +5,7 @@ const fetch      = require('node-fetch');
 const FormData   = require('form-data');
 const cors       = require('cors');
 const path       = require('path');
+const { Pool }   = require('pg');
 
 const app    = express();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
@@ -12,6 +13,102 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// ── Database setup (PostgreSQL) ───────────────────────────────
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL?.includes('railway') ? { rejectUnauthorized: false } : false
+});
+
+async function initDB() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS applicants (
+      id         SERIAL PRIMARY KEY,
+      name       TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      fields     JSONB NOT NULL DEFAULT '{}'
+    );
+    CREATE INDEX IF NOT EXISTS idx_applicants_name ON applicants(name);
+  `);
+  console.log('Database ready');
+}
+
+initDB().catch(err => console.error('DB init error:', err));
+
+// ── /api/applicants/search ────────────────────────────────────
+app.get('/api/applicants/search', async (req, res) => {
+  const q = (req.query.q || '').trim();
+  try {
+    let result;
+    if (!q) {
+      result = await pool.query(
+        `SELECT id, name, updated_at FROM applicants ORDER BY updated_at DESC LIMIT 20`
+      );
+    } else {
+      result = await pool.query(
+        `SELECT id, name, updated_at FROM applicants WHERE name ILIKE $1 ORDER BY updated_at DESC LIMIT 20`,
+        [`%${q}%`]
+      );
+    }
+    res.json(result.rows);
+  } catch(e) {
+    console.error('Search error:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── /api/applicants/:id ───────────────────────────────────────
+app.get('/api/applicants/:id', async (req, res) => {
+  try {
+    const result = await pool.query(`SELECT * FROM applicants WHERE id = $1`, [req.params.id]);
+    if (!result.rows.length) return res.status(404).json({ error: 'Applicant not found' });
+    res.json(result.rows[0]);
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── /api/applicants (create) ──────────────────────────────────
+app.post('/api/applicants', async (req, res) => {
+  const { name, fields } = req.body;
+  if (!name) return res.status(400).json({ error: 'Name is required' });
+  try {
+    const result = await pool.query(
+      `INSERT INTO applicants (name, fields) VALUES ($1, $2) RETURNING *`,
+      [name, JSON.stringify(fields || {})]
+    );
+    res.json(result.rows[0]);
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── /api/applicants/:id (update) ─────────────────────────────
+app.put('/api/applicants/:id', async (req, res) => {
+  const { name, fields } = req.body;
+  try {
+    const result = await pool.query(
+      `UPDATE applicants SET name = $1, fields = $2, updated_at = NOW()
+       WHERE id = $3 RETURNING *`,
+      [name, JSON.stringify(fields || {}), req.params.id]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'Applicant not found' });
+    res.json(result.rows[0]);
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── /api/applicants/:id (delete) ─────────────────────────────
+app.delete('/api/applicants/:id', async (req, res) => {
+  try {
+    await pool.query(`DELETE FROM applicants WHERE id = $1`, [req.params.id]);
+    res.json({ deleted: true });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 
 // ── /api/transcribe ──────────────────────────────────────────
 // Accepts: multipart/form-data with field "audio" (the file)
@@ -65,39 +162,88 @@ app.post('/api/analyze', async (req, res) => {
   try {
     const TPM_LIMIT       = 5800;
     const RESPONSE_TOKENS = 800;
+    const DOC_CHUNK_SIZE  = 4000; // chars per document chunk
 
-    // Build a multilingual-aware system prompt
     const multilingualPrompt = systemPrompt +
-      '\n\nIMPORTANT: Documents may be in Hebrew, Arabic, or other languages. ' +
-      'You MUST still extract the data and return field values in English where possible. ' +
-      'For example, Hebrew company names should be transliterated or translated to English. ' +
-      'Do not skip fields just because the document is not in English.';
+      '\n\nADDITIONAL RULES: Documents may be in Hebrew, Arabic, or other languages. ' +
+      'Extract and return values in English. Transliterate names if needed. ' +
+      'NEVER invent data. NEVER use placeholder values. NEVER hallucinate. ' +
+      'If the information is not explicitly in the document, do NOT include the field.' +
+      '\n\nPEP COMPLIANCE: The field "areYouAPep" must NEVER be filled unless the client ' +
+      'has explicitly and directly stated Yes, No, or Uncertain in their own words. ' +
+      'Do NOT infer "No" from silence or absence of mention. If not directly answered, omit it entirely.';
 
     const SYSTEM_TOKENS = Math.ceil(multilingualPrompt.length / 4);
     const AVAILABLE     = TPM_LIMIT - RESPONSE_TOKENS - SYSTEM_TOKENS;
 
-    // Extract ALL document/transcript text
-    const docText = contentParts
+    // ── 1. Extract full document text ──────────────────────────
+    const allDocText = contentParts
       .map(p => p.text || '')
       .filter(t => t.trim().length > 20)
-      .join('\n')
-      .slice(0, 3500);
+      .join('\n');
 
-    console.log(`docText length: ${docText.length} chars, first 200: ${docText.slice(0, 200)}`);
+    console.log(`Received ${contentParts.length} content parts, total doc text: ${allDocText.length} chars`);
 
-    const docTokens = Math.ceil((docText.length * 1.5) / 4);
+    // ── 2. Pre-translate Hebrew if needed ──────────────────────
+    const isHebrew = /[\u0590-\u05FF]/.test(allDocText);
+    let processedText = allDocText;
 
-    // Split field summary lines into batches that fit within token budget
+    if (isHebrew) {
+      console.log('Hebrew detected — pre-translating...');
+      try {
+        // Translate in 3000-char chunks if needed
+        const hebrewChunks = [];
+        for (let i = 0; i < allDocText.length; i += 3000) {
+          hebrewChunks.push(allDocText.slice(i, i + 3000));
+        }
+        const translatedParts = [];
+        for (const chunk of hebrewChunks) {
+          const translateRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
+            body: JSON.stringify({
+              model: 'llama-3.1-8b-instant',
+              max_tokens: 1500,
+              temperature: 0.1,
+              messages: [{ role: 'user', content: `Translate to English. Keep all numbers, names, and amounts unchanged:\n\n${chunk}` }]
+            })
+          });
+          if (translateRes.ok) {
+            const tData = await translateRes.json();
+            const t = tData.choices?.[0]?.message?.content || '';
+            if (t.length > 50) translatedParts.push(t);
+          }
+          await new Promise(r => setTimeout(r, 500));
+        }
+        if (translatedParts.length > 0) {
+          processedText = translatedParts.join('\n');
+          console.log(`Translation complete: ${processedText.length} chars`);
+        }
+      } catch(e) {
+        console.log('Translation failed, using original:', e.message);
+      }
+    }
+
+    // ── 3. Split document text into 4000-char chunks ───────────
+    const docChunks = [];
+    for (let i = 0; i < processedText.length; i += DOC_CHUNK_SIZE) {
+      docChunks.push(processedText.slice(i, i + DOC_CHUNK_SIZE));
+    }
+    if (docChunks.length === 0) docChunks.push('');
+    console.log(`Document split into ${docChunks.length} chunk(s)`);
+
+    // ── 4. Split field summary into token-safe batches ─────────
+    const DOC_CHUNK_TOKENS = Math.ceil(DOC_CHUNK_SIZE * 1.5 / 4);
     const fieldLines = fieldSummary.split('\n');
-    const batches = [];
+    const fieldBatches = [];
     let current = [];
     let currentTokens = 0;
-    const overhead = docTokens + 60; // doc + prompt framing tokens
+    const overhead = DOC_CHUNK_TOKENS + 80;
 
     for (const line of fieldLines) {
       const lineTokens = Math.ceil(line.length / 4);
       if (currentTokens + lineTokens + overhead > AVAILABLE && current.length > 0) {
-        batches.push(current.join('\n'));
+        fieldBatches.push(current.join('\n'));
         current = [line];
         currentTokens = lineTokens;
       } else {
@@ -105,81 +251,39 @@ app.post('/api/analyze', async (req, res) => {
         currentTokens += lineTokens;
       }
     }
-    if (current.length > 0) batches.push(current.join('\n'));
+    if (current.length > 0) fieldBatches.push(current.join('\n'));
 
-    console.log(`Splitting into ${batches.length} batch(es) for ${fieldLines.length} field lines`);
+    console.log(`${fieldBatches.length} field batch(es) × ${docChunks.length} doc chunk(s) = ${fieldBatches.length * docChunks.length} total requests`);
 
+    // ── 5. Run every field batch against every doc chunk ───────
     const mergedExtracted = {};
     let lastSummary = '';
+    let requestCount = 0;
 
-    for (let i = 0; i < batches.length; i++) {
-      const batchFields = batches[i];
-      const userText = `Fields to extract (batch ${i + 1} of ${batches.length}):\n${batchFields}\n\n---\n\nDocuments:\n${docText}`;
+    for (const docChunk of docChunks) {
+      for (let i = 0; i < fieldBatches.length; i++) {
+        requestCount++;
+        const userText = `Fields to extract (batch ${i + 1} of ${fieldBatches.length}, doc chunk ${docChunks.indexOf(docChunk) + 1} of ${docChunks.length}):\n${fieldBatches[i]}\n\n---\n\nDocument text:\n${docChunk}`;
 
-      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${groqKey}`
-        },
-        body: JSON.stringify({
-          model: 'llama-3.1-8b-instant',
-          max_tokens: RESPONSE_TOKENS,
-          temperature: 0.1,
-          messages: [
-            { role: 'system', content: multilingualPrompt },
-            { role: 'user',   content: userText }
-          ]
-        })
-      });
-
-      if (!groqRes.ok) {
-        const err = await groqRes.json().catch(() => ({}));
-        // If rate limited, wait 60s and retry once
-        if (groqRes.status === 429) {
-          console.log('Rate limited — waiting 60s before retry');
-          await new Promise(r => setTimeout(r, 60000));
-          const retry = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
-            body: JSON.stringify({
-              model: 'llama-3.1-8b-instant',
-              max_tokens: RESPONSE_TOKENS,
-              temperature: 0.1,
-              messages: [
-                { role: 'system', content: multilingualPrompt },
-                { role: 'user',   content: userText }
-              ]
-            })
-          });
-          if (!retry.ok) {
-            const retryErr = await retry.json().catch(() => ({}));
-            return res.status(retry.status).json({ error: retryErr.error?.message || `Groq error ${retry.status}` });
+        const parsed = await callGroq(groqKey, multilingualPrompt, userText, RESPONSE_TOKENS);
+        if (parsed?.extracted) {
+          // Only overwrite if new value has higher or equal confidence
+          for (const [k, v] of Object.entries(parsed.extracted)) {
+            if (v?.value && !mergedExtracted[k]) {
+              mergedExtracted[k] = v;
+            }
           }
-          const retryData = await retry.json();
-          const retryText = retryData.choices?.[0]?.message?.content || '';
-          const retryParsed = parseJSON(retryText);
-          if (retryParsed?.extracted) {
-            Object.assign(mergedExtracted, retryParsed.extracted);
-            lastSummary = retryParsed.summary || lastSummary;
-          }
-          continue;
+          lastSummary = parsed.summary || lastSummary;
         }
-        return res.status(groqRes.status).json({ error: err.error?.message || `Groq error ${groqRes.status}` });
-      }
 
-      const data = await groqRes.json();
-      const text = data.choices?.[0]?.message?.content || '';
-      const parsed = parseJSON(text);
-      if (parsed?.extracted) {
-        Object.assign(mergedExtracted, parsed.extracted);
-        lastSummary = parsed.summary || lastSummary;
+        // Pause between requests to avoid TPM burst
+        if (requestCount < fieldBatches.length * docChunks.length) {
+          await new Promise(r => setTimeout(r, 800));
+        }
       }
-
-      // Small pause between batches to avoid TPM burst
-      if (i < batches.length - 1) await new Promise(r => setTimeout(r, 1000));
     }
 
+    console.log(`Completed ${requestCount} requests, extracted ${Object.keys(mergedExtracted).length} fields`);
     res.json({ extracted: mergedExtracted, summary: lastSummary || 'Extraction complete' });
 
   } catch (e) {
@@ -187,6 +291,44 @@ app.post('/api/analyze', async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+
+// ── Groq chat helper with rate-limit retry ────────────────────
+async function callGroq(apiKey, systemPrompt, userText, maxTokens) {
+  const body = JSON.stringify({
+    model: 'llama-3.1-8b-instant',
+    max_tokens: maxTokens,
+    temperature: 0.1,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user',   content: userText }
+    ]
+  });
+
+  let res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+    body
+  });
+
+  // Retry once on rate limit
+  if (res.status === 429) {
+    console.log('Rate limited — waiting 60s');
+    await new Promise(r => setTimeout(r, 60000));
+    res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+      body
+    });
+  }
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `Groq error ${res.status}`);
+  }
+
+  const data = await res.json();
+  return parseJSON(data.choices?.[0]?.message?.content || '');
+}
 
 function parseJSON(text) {
   let parsed = null;
