@@ -2002,14 +2002,17 @@ PEP RULE — CRITICAL COMPLIANCE REQUIREMENT:
 - If the PEP question has not been directly answered in the document, leave "areYouAPep" out entirely`;
 
   const fieldSummary = SCHEMA.sections.map(s =>
-    `${s.title}:\n` + s.fields.map(f =>
-      `  ${f.id}: "${f.title}"${f.options ? ' [options: ' + f.options.join(' | ') + ']' : ''}${f.required ? ' *required' : ''}`
+    `[${s.title}]\n` + s.fields.map(f =>
+      `  FIELD_ID="${f.id}" QUESTION="${f.title}"${f.options ? ' OPTIONS=[' + f.options.join('|') + ']' : ''}${f.required ? ' REQUIRED' : ''}`
     ).join('\n')
   ).join('\n\n');
 
   const contentParts = [{
     type: 'text',
-    text: `Available onboarding fields:\n\n${fieldSummary}\n\n---\n\nPlease extract all onboarding information from the following:`
+    text: `You must extract real data values from the documents below and map them to these field IDs.
+The QUESTION shows what information to look for. The value must come from the document text — never from the QUESTION text itself.
+
+FIELDS:\n${fieldSummary}\n\n---\n\nDOCUMENTS TO EXTRACT FROM:`
   }];
 
   // Text documents

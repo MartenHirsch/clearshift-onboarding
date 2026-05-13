@@ -171,7 +171,13 @@ app.post('/api/analyze', async (req, res) => {
       'If the information is not explicitly in the document, do NOT include the field.' +
       '\n\nPEP COMPLIANCE: The field "areYouAPep" must NEVER be filled unless the client ' +
       'has explicitly and directly stated Yes, No, or Uncertain in their own words. ' +
-      'Do NOT infer "No" from silence or absence of mention. If not directly answered, omit it entirely.';
+      'Do NOT infer "No" from silence or absence of mention. If not directly answered, omit it entirely.' +
+      '\n\nCRITICAL EXAMPLE — correct extraction:\n' +
+      'FIELD_ID="companyNameInEnglish" QUESTION="Name of the Business"\n' +
+      'Document contains: "שם חברה: גרניטה - מקבוצת שאהין בע\'\'מ"\n' +
+      'CORRECT: {"companyNameInEnglish": {"value": "Granita - Shahin Group Ltd", "confidence": "high"}}\n' +
+      'WRONG: {"companyNameInEnglish": {"value": "Name of the Business", "confidence": "high"}}\n' +
+      'The value is ALWAYS from the document, NEVER the question text.';
 
     const SYSTEM_TOKENS = Math.ceil(multilingualPrompt.length / 4);
     const AVAILABLE     = TPM_LIMIT - RESPONSE_TOKENS - SYSTEM_TOKENS;
@@ -263,7 +269,10 @@ app.post('/api/analyze', async (req, res) => {
     for (const docChunk of docChunks) {
       for (let i = 0; i < fieldBatches.length; i++) {
         requestCount++;
-        const userText = `Fields to extract (batch ${i + 1} of ${fieldBatches.length}, doc chunk ${docChunks.indexOf(docChunk) + 1} of ${docChunks.length}):\n${fieldBatches[i]}\n\n---\n\nDocument text:\n${docChunk}`;
+        const userText = `Extract real data values from the document text below. Map them to these field IDs.
+The QUESTION shows what to look for. The value must come from the document — NEVER from the QUESTION text itself.
+
+FIELDS (batch ${i + 1} of ${fieldBatches.length}):\n${fieldBatches[i]}\n\n---\n\nDOCUMENT TEXT (chunk ${docChunks.indexOf(docChunk) + 1} of ${docChunks.length}):\n${docChunk}`;
 
         const parsed = await callGroq(groqKey, multilingualPrompt, userText, RESPONSE_TOKENS);
         if (parsed?.extracted) {
