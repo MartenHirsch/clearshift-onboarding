@@ -1661,9 +1661,23 @@ function updateProgress() {
   const bv = extractedData['whatTypeOfCompanyAre']?.value || '';
   const isNP = bv.toLowerCase().includes('not-for-profit') || bv.toLowerCase().includes('nonprofit');
   const isFP = bv.toLowerCase().includes('for profit') || bv.toLowerCase().includes('corporation') || bv.toLowerCase().includes('sole proprietor');
+  const bc = (extractedData['countryWhereMyPrimar']?.value || '').toLowerCase();
+  const BANK_M = {
+    'domesticacctnames':'israel','israelibank':'israel','pleaseSelectIsraeliB':'israel',
+    'domesticbankbranchnumber':'israel','domesticbankaccountnumber':'israel','linkedaccountiban':'israel',
+    'newQuestion2013':'united states','bankName':'united states','routingNumber':'united states',
+    'achRoutingNumber':'united states','fedwireRoutingNumber':'united states','dualUseRoutingNumber':'united states',
+    'nameOfOwnersAsItAppe':'european union','bankName_l4i6i':'european union','ibanNumber':'european union',
+  };
+  const BP = {'doYouHaveAnyPartners':['for profit','sole proprietor'],'nameOfPartner':['for profit','sole proprietor']};
+  function fv(fid) {
+    const bc2 = BANK_M[fid]; if (bc2 && !bc.includes(bc2)) return false;
+    const bp = BP[fid]; if (bp && bv && !bp.some(t => bv.toLowerCase().includes(t))) return false;
+    return true;
+  }
   const activeSecs = SCHEMA.sections.filter(s => !s.condition || !(isFP && !isNP));
-  const allRequired = activeSecs.flatMap(s => s.fields.filter(f => f.required));
-  const filled      = allRequired.filter(f => extractedData[f.id]);
+  const allRequired = activeSecs.flatMap(s => s.fields.filter(f => f.required && fv(f.id)));
+  const filled = allRequired.filter(f => extractedData[f.id]);
   const pct = allRequired.length > 0 ? Math.round((filled.length / allRequired.length) * 100) : 0;
   document.getElementById('progressText').textContent = `${pct}% complete`;
   document.getElementById('progressFill').style.width = pct + '%';
@@ -2356,11 +2370,23 @@ function renderDashboard() {
     'doYouHaveAnyPartners': ['for profit', 'sole proprietor'],
     'nameOfPartner':        ['for profit', 'sole proprietor'],
   };
+  const bankCountryVal = (extractedData['countryWhereMyPrimar']?.value || '').toLowerCase();
+  const BANK_MAP = {
+    'domesticacctnames': 'israel', 'israelibank': 'israel', 'pleaseSelectIsraeliB': 'israel',
+    'domesticbankbranchnumber': 'israel', 'domesticbankaccountnumber': 'israel', 'linkedaccountiban': 'israel',
+    'newQuestion2013': 'united states', 'bankName': 'united states', 'routingNumber': 'united states',
+    'achRoutingNumber': 'united states', 'fedwireRoutingNumber': 'united states', 'dualUseRoutingNumber': 'united states',
+    'nameOfOwnersAsItAppe': 'european union', 'bankName_l4i6i': 'european union', 'ibanNumber': 'european union',
+  };
   function fieldVisible(fieldId) {
     const cond = FIELD_CONDITIONS_MAP[fieldId];
-    if (!cond) return true;
-    if (!businessTypeValue) return true;
-    return cond.some(t => businessTypeValue.toLowerCase().includes(t));
+    if (cond && businessTypeValue && !cond.some(t => businessTypeValue.toLowerCase().includes(t))) return false;
+    const bankCond = BANK_MAP[fieldId];
+    if (bankCond) {
+      if (!bankCountryVal) return false; // hide until country selected
+      if (!bankCountryVal.includes(bankCond)) return false;
+    }
+    return true;
   }
 
   // Calculate stats using only active sections and visible fields
@@ -2491,19 +2517,48 @@ function renderDashboard() {
   }
 
   // Field-level conditions based on business type
-  // Keys = fieldId, Values = array of business types that should SEE this field
   const FIELD_CONDITIONS = {
-    'doYouHaveAnyPartners': ['For Profit Business (Corporation, LLC, etc.)', 'Sole Proprietor'],
-    'nameOfPartner':        ['For Profit Business (Corporation, LLC, etc.)', 'Sole Proprietor'],
-    // Sole proprietor specific — no company registration fields needed
-    'companysAccountingFi': null, // shown for all
+    'doYouHaveAnyPartners': ['for profit', 'sole proprietor'],
+    'nameOfPartner':        ['for profit', 'sole proprietor'],
+  };
+
+  // Bank account field conditions based on selected bank country
+  const bankCountry = (extractedData['countryWhereMyPrimar']?.value || '').toLowerCase();
+  const BANK_FIELD_CONDITIONS = {
+    // Israeli fields
+    'domesticacctnames':        'israel',
+    'israelibank':              'israel',
+    'pleaseSelectIsraeliB':     'israel',
+    'domesticbankbranchnumber': 'israel',
+    'domesticbankaccountnumber':'israel',
+    'linkedaccountiban':        'israel',
+    // US fields
+    'newQuestion2013':          'united states',
+    'bankName':                 'united states',
+    'routingNumber':            'united states',
+    'achRoutingNumber':         'united states',
+    'fedwireRoutingNumber':     'united states',
+    'dualUseRoutingNumber':     'united states',
+    // EU fields
+    'nameOfOwnersAsItAppe':     'european union',
+    'bankName_l4i6i':           'european union',
+    'ibanNumber':               'european union',
   };
 
   function isFieldVisible(field) {
-    const cond = FIELD_CONDITIONS[field.id];
-    if (!cond) return true; // no condition = always visible
-    if (!businessTypeValue) return true; // type unknown = show all
-    return cond.some(t => businessTypeValue.toLowerCase().includes(t.toLowerCase()));
+    // Business type conditions
+    const btCond = FIELD_CONDITIONS[field.id];
+    if (btCond) {
+      if (!businessTypeValue) return true;
+      if (!btCond.some(t => businessTypeValue.toLowerCase().includes(t))) return false;
+    }
+    // Bank country conditions
+    const bankCond = BANK_FIELD_CONDITIONS[field.id];
+    if (bankCond) {
+      if (!bankCountry) return false; // country not set — hide all bank detail fields
+      return bankCountry.includes(bankCond);
+    }
+    return true;
   }
 
   // Sections
