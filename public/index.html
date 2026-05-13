@@ -914,6 +914,40 @@
     border: 1px solid rgba(167,139,250,0.2);
     margin-top: 3px;
   }
+
+  /* multiSelect checkbox list */
+  .ms-form { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .ms-options {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    max-height: 200px;
+    overflow-y: auto;
+    width: 100%;
+    padding: 8px;
+    background: var(--bg);
+    border: 1.5px solid var(--accent-dim);
+    border-radius: var(--radius-sm);
+  }
+  .ms-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 11px;
+    color: var(--text);
+    padding: 3px 4px;
+    border-radius: 4px;
+    transition: background 0.1s;
+  }
+  .ms-option:hover { background: var(--surface2); }
+  .ms-check {
+    width: 13px; height: 13px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .ms-actions { display: flex; gap: 6px; }
   .checklist-block {
     background: var(--surface);
     border: 1px solid var(--border2);
@@ -1595,7 +1629,7 @@ const SCHEMA = {
         { "id": "linkedaccountiban", "title": "IBAN (Israeli)", "type": "text", "required": false },
         { "id": "newQuestion2013", "title": "Name as on US bank account", "type": "text", "required": false },
         { "id": "bankName", "title": "US bank name", "type": "text", "required": false },
-        { "id": "routingNumber", "title": "US routing number type", "type": "multiSelect", "required": false, "options": ["ACH Routing Number", "Fedwire Routing Number", "Dual Use"] },
+        { "id": "routingNumber", "title": "US routing number type", "type": "select", "required": false, "options": ["ACH Routing Number", "Fedwire Routing Number", "Dual Use"] },
         { "id": "achRoutingNumber", "title": "ACH routing number", "type": "text", "required": false },
         { "id": "fedwireRoutingNumber", "title": "Fedwire routing number", "type": "text", "required": false },
         { "id": "dualUseRoutingNumber", "title": "Dual use routing number", "type": "text", "required": false },
@@ -2520,11 +2554,23 @@ function renderFieldRow(field) {
   if (data) {
     let displayVal = data.value;
     if (isFile) displayVal = '📎 Document provided';
+
+    // For multiSelect, render each value as a tag
+    let displayHtml;
+    if (field.type === 'multiSelect' && !isFile && data.value) {
+      const tags = data.value.split(', ').map(v =>
+        `<span style="display:inline-block; background:var(--surface2); border:1px solid var(--border2); border-radius:4px; padding:1px 7px; font-size:10px; margin:2px 2px 2px 0">${escHtml(v)}</span>`
+      ).join('');
+      displayHtml = `<div class="field-value filled" id="fv-${field.id}">${tags}</div>`;
+    } else {
+      displayHtml = `<div class="field-value filled" id="fv-${field.id}">${escHtml(displayVal)}</div>`;
+    }
+
     const manualTag = data.manual ? `<div class="field-manual-tag">✏ Manually entered</div>` : '';
     const sourceTag = data.sources && !data.manual ? `<div class="source-tag">📄 ${data.sources.join(', ')}</div>` : '';
     valueHtml = `<div class="field-value-wrap">
       <div class="field-value-text">
-        <div class="field-value filled" id="fv-${field.id}">${escHtml(displayVal)}</div>
+        ${displayHtml}
         ${sourceTag}${manualTag}
       </div>
       ${!isFile ? `<button class="edit-field-btn" onclick="startEdit('${field.id}')">✏ Edit</button>` : ''}
@@ -2578,9 +2624,28 @@ function renderFieldRow(field) {
 
 function buildEditForm(field) {
   const cur = extractedData[field.id]?.value || '';
-  const escaped = escHtml(cur);
 
-  if (field.options && field.options.length > 0) {
+  // multiSelect — render checkboxes
+  if (field.type === 'multiSelect' && field.options) {
+    const selected = cur ? cur.split(', ') : [];
+    const checks = field.options.map(o => {
+      const checked = selected.includes(o) ? 'checked' : '';
+      return `<label class="ms-option">
+        <input type="checkbox" class="ms-check" data-field="${field.id}" value="${escHtml(o)}" ${checked}>
+        <span>${escHtml(o)}</span>
+      </label>`;
+    }).join('');
+    return `<div class="field-edit-form ms-form">
+      <div class="ms-options" id="fei-${field.id}">${checks}</div>
+      <div class="ms-actions">
+        <button class="field-edit-save" onclick="saveEditMulti('${field.id}')">Save</button>
+        <button class="field-edit-cancel" onclick="cancelEdit('${field.id}')">Cancel</button>
+      </div>
+    </div>`;
+  }
+
+  // single select — dropdown
+  if (field.type === 'select' && field.options) {
     const opts = field.options.map(o =>
       `<option value="${escHtml(o)}" ${o === cur ? 'selected' : ''}>${escHtml(o)}</option>`
     ).join('');
@@ -2593,6 +2658,8 @@ function buildEditForm(field) {
     </div>`;
   }
 
+  // text input
+  const escaped = escHtml(cur);
   return `<div class="field-edit-form">
     <input type="text" class="field-edit-input" id="fei-${field.id}" value="${escaped}"
       placeholder="Enter value…"
@@ -2600,6 +2667,28 @@ function buildEditForm(field) {
     <button class="field-edit-save" onclick="saveEdit('${field.id}')">Save</button>
     <button class="field-edit-cancel" onclick="cancelEdit('${field.id}')">Cancel</button>
   </div>`;
+}
+
+function saveEditMulti(fieldId) {
+  const container = document.getElementById(`fei-${fieldId}`);
+  if (!container) return;
+  const checked = Array.from(container.querySelectorAll('.ms-check:checked')).map(cb => cb.value);
+  const val = checked.join(', ');
+
+  if (val) {
+    extractedData[fieldId] = { value: val, confidence: 'high', manual: true, sources: [] };
+  } else {
+    delete extractedData[fieldId];
+  }
+
+  cancelEdit(fieldId);
+  markUnsaved();
+  const field = SCHEMA.sections.flatMap(s => s.fields).find(f => f.id === fieldId);
+  if (field) {
+    const row = document.getElementById(`field-${fieldId}`);
+    if (row) row.outerHTML = renderFieldRow(field);
+  }
+  updateProgress();
 }
 
 function startEdit(fieldId) {
