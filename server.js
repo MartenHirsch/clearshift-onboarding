@@ -174,6 +174,7 @@ app.post('/api/analyze', async (req, res) => {
 
   const anthropicKey = ANTHROPIC_KEY;
   if (!anthropicKey) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured on server' });
+  console.log('Using Anthropic key:', anthropicKey.slice(0, 20) + '...');
 
   try {
     const enhancedPrompt = systemPrompt +
