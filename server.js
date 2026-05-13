@@ -159,140 +159,74 @@ app.post('/api/analyze', async (req, res) => {
   const groqKey = process.env.GROQ_API_KEY;
   if (!groqKey) return res.status(500).json({ error: 'GROQ_API_KEY not configured on server' });
 
+  // Set a hard timeout so Railway doesn't kill us first
+  res.setTimeout && res.setTimeout(0);
+
   try {
-    const TPM_LIMIT       = 5800;
-    const RESPONSE_TOKENS = 800;
-    const DOC_CHUNK_SIZE  = 4000; // chars per document chunk
+    const MODEL          = 'llama-3.3-70b-versatile'; // 30k TPM on free tier
+    const MAX_DOC_CHARS  = 12000; // safe limit for this model
+    const RESPONSE_TOKENS = 2000;
 
     const multilingualPrompt = systemPrompt +
       '\n\nADDITIONAL RULES: Documents may be in Hebrew, Arabic, or other languages. ' +
-      'Extract and return values in English. Transliterate names if needed. ' +
+      'Extract and return values in English. Transliterate Hebrew/Arabic names to English letters. ' +
       'NEVER invent data. NEVER use placeholder values. NEVER hallucinate. ' +
-      'If the information is not explicitly in the document, do NOT include the field.' +
+      'If the information is not explicitly in the document, do NOT include that field.' +
       '\n\nPEP COMPLIANCE: The field "areYouAPep" must NEVER be filled unless the client ' +
-      'has explicitly and directly stated Yes, No, or Uncertain in their own words. ' +
-      'Do NOT infer "No" from silence or absence of mention. If not directly answered, omit it entirely.' +
-      '\n\nCRITICAL EXAMPLE — correct extraction:\n' +
+      'has explicitly and directly stated Yes, No, or Uncertain. ' +
+      'Do NOT infer "No" from silence. If not directly answered, omit it entirely.' +
+      '\n\nCRITICAL EXAMPLE of correct extraction:\n' +
       'FIELD_ID="companyNameInEnglish" QUESTION="Name of the Business"\n' +
       'Document contains: "שם חברה: גרניטה - מקבוצת שאהין בע\'\'מ"\n' +
       'CORRECT: {"companyNameInEnglish": {"value": "Granita - Shahin Group Ltd", "confidence": "high"}}\n' +
-      'WRONG: {"companyNameInEnglish": {"value": "Name of the Business", "confidence": "high"}}\n' +
-      'The value is ALWAYS from the document, NEVER the question text.';
+      'WRONG:   {"companyNameInEnglish": {"value": "Name of the Business", "confidence": "high"}}\n' +
+      'The value is ALWAYS real data from the document, NEVER the question/field label text.';
 
-    const SYSTEM_TOKENS = Math.ceil(multilingualPrompt.length / 4);
-    const AVAILABLE     = TPM_LIMIT - RESPONSE_TOKENS - SYSTEM_TOKENS;
-
-    // ── 1. Extract full document text ──────────────────────────
+    // ── 1. Extract and cap document text ──────────────────────
     const allDocText = contentParts
       .map(p => p.text || '')
       .filter(t => t.trim().length > 20)
       .join('\n');
 
-    console.log(`Received ${contentParts.length} content parts, total doc text: ${allDocText.length} chars`);
+    console.log(`Doc text: ${allDocText.length} chars`);
 
-    // ── 2. Pre-translate Hebrew if needed ──────────────────────
-    const isHebrew = /[\u0590-\u05FF]/.test(allDocText);
-    let processedText = allDocText;
-
-    if (isHebrew) {
-      console.log('Hebrew detected — pre-translating...');
-      try {
-        // Translate in 3000-char chunks if needed
-        const hebrewChunks = [];
-        for (let i = 0; i < allDocText.length; i += 3000) {
-          hebrewChunks.push(allDocText.slice(i, i + 3000));
-        }
-        const translatedParts = [];
-        for (const chunk of hebrewChunks) {
-          const translateRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
-            body: JSON.stringify({
-              model: 'llama-3.1-8b-instant',
-              max_tokens: 1500,
-              temperature: 0.1,
-              messages: [{ role: 'user', content: `Translate to English. Keep all numbers, names, and amounts unchanged:\n\n${chunk}` }]
-            })
-          });
-          if (translateRes.ok) {
-            const tData = await translateRes.json();
-            const t = tData.choices?.[0]?.message?.content || '';
-            if (t.length > 50) translatedParts.push(t);
-          }
-          await new Promise(r => setTimeout(r, 500));
-        }
-        if (translatedParts.length > 0) {
-          processedText = translatedParts.join('\n');
-          console.log(`Translation complete: ${processedText.length} chars`);
-        }
-      } catch(e) {
-        console.log('Translation failed, using original:', e.message);
-      }
-    }
-
-    // ── 3. Split document text into 4000-char chunks ───────────
+    // Cap at MAX_DOC_CHARS — split into chunks if longer
     const docChunks = [];
-    for (let i = 0; i < processedText.length; i += DOC_CHUNK_SIZE) {
-      docChunks.push(processedText.slice(i, i + DOC_CHUNK_SIZE));
+    for (let i = 0; i < Math.max(allDocText.length, 1); i += MAX_DOC_CHARS) {
+      docChunks.push(allDocText.slice(i, i + MAX_DOC_CHARS));
     }
-    if (docChunks.length === 0) docChunks.push('');
-    console.log(`Document split into ${docChunks.length} chunk(s)`);
+    console.log(`${docChunks.length} doc chunk(s), model: ${MODEL}`);
 
-    // ── 4. Split field summary into token-safe batches ─────────
-    const DOC_CHUNK_TOKENS = Math.ceil(DOC_CHUNK_SIZE * 1.5 / 4);
-    const fieldLines = fieldSummary.split('\n');
-    const fieldBatches = [];
-    let current = [];
-    let currentTokens = 0;
-    const overhead = DOC_CHUNK_TOKENS + 80;
-
-    for (const line of fieldLines) {
-      const lineTokens = Math.ceil(line.length / 4);
-      if (currentTokens + lineTokens + overhead > AVAILABLE && current.length > 0) {
-        fieldBatches.push(current.join('\n'));
-        current = [line];
-        currentTokens = lineTokens;
-      } else {
-        current.push(line);
-        currentTokens += lineTokens;
-      }
-    }
-    if (current.length > 0) fieldBatches.push(current.join('\n'));
-
-    console.log(`${fieldBatches.length} field batch(es) × ${docChunks.length} doc chunk(s) = ${fieldBatches.length * docChunks.length} total requests`);
-
-    // ── 5. Run every field batch against every doc chunk ───────
+    // ── 2. Run one request per doc chunk (all fields each time) ─
     const mergedExtracted = {};
     let lastSummary = '';
-    let requestCount = 0;
 
-    for (const docChunk of docChunks) {
-      for (let i = 0; i < fieldBatches.length; i++) {
-        requestCount++;
-        const userText = `Extract real data values from the document text below. Map them to these field IDs.
-The QUESTION shows what to look for. The value must come from the document — NEVER from the QUESTION text itself.
+    for (let ci = 0; ci < docChunks.length; ci++) {
+      const userText = `Extract real data values from the document text below and map them to the field IDs.
+The QUESTION shows what information to look for. The value must come from the document — NEVER from the QUESTION text itself.
 
-FIELDS (batch ${i + 1} of ${fieldBatches.length}):\n${fieldBatches[i]}\n\n---\n\nDOCUMENT TEXT (chunk ${docChunks.indexOf(docChunk) + 1} of ${docChunks.length}):\n${docChunk}`;
+${fieldSummary}
 
-        const parsed = await callGroq(groqKey, multilingualPrompt, userText, RESPONSE_TOKENS);
-        if (parsed?.extracted) {
-          // Only overwrite if new value has higher or equal confidence
-          for (const [k, v] of Object.entries(parsed.extracted)) {
-            if (v?.value && !mergedExtracted[k]) {
-              mergedExtracted[k] = v;
-            }
+---
+
+DOCUMENT TEXT (part ${ci + 1} of ${docChunks.length}):
+${docChunks[ci]}`;
+
+      const parsed = await callGroq(groqKey, multilingualPrompt, userText, RESPONSE_TOKENS, MODEL);
+      if (parsed?.extracted) {
+        for (const [k, v] of Object.entries(parsed.extracted)) {
+          if (v?.value && !mergedExtracted[k]) {
+            mergedExtracted[k] = v;
           }
-          lastSummary = parsed.summary || lastSummary;
         }
-
-        // Pause between requests to avoid TPM burst
-        if (requestCount < fieldBatches.length * docChunks.length) {
-          await new Promise(r => setTimeout(r, 800));
-        }
+        lastSummary = parsed.summary || lastSummary;
       }
+
+      // Small pause only if multiple chunks
+      if (ci < docChunks.length - 1) await new Promise(r => setTimeout(r, 300));
     }
 
-    console.log(`Completed ${requestCount} requests, extracted ${Object.keys(mergedExtracted).length} fields`);
+    console.log(`Extracted ${Object.keys(mergedExtracted).length} fields from ${docChunks.length} chunk(s)`);
     res.json({ extracted: mergedExtracted, summary: lastSummary || 'Extraction complete' });
 
   } catch (e) {
@@ -302,9 +236,9 @@ FIELDS (batch ${i + 1} of ${fieldBatches.length}):\n${fieldBatches[i]}\n\n---\n\
 });
 
 // ── Groq chat helper with rate-limit retry ────────────────────
-async function callGroq(apiKey, systemPrompt, userText, maxTokens) {
+async function callGroq(apiKey, systemPrompt, userText, maxTokens, model = 'llama-3.3-70b-versatile') {
   const body = JSON.stringify({
-    model: 'llama-3.1-8b-instant',
+    model,
     max_tokens: maxTokens,
     temperature: 0.1,
     messages: [
