@@ -71,6 +71,12 @@ app.post('/api/analyze', async (req, res) => {
       .filter(Boolean)
       .join('\n');
 
+    // Trim fieldSummary to just id + title to save tokens
+    const trimmedSummary = fieldSummary
+      .split('\n')
+      .map(line => line.replace(/\[options:.*?\]/g, '').trim())
+      .join('\n');
+
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -78,12 +84,12 @@ app.post('/api/analyze', async (req, res) => {
         'Authorization': `Bearer ${groqKey}`
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        max_tokens: 4000,
+        model: 'llama-3.1-8b-instant',
+        max_tokens: 2000,
         temperature: 0.1,
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user',   content: userText }
+          { role: 'user',   content: userText.replace(fieldSummary, trimmedSummary) }
         ]
       })
     });
