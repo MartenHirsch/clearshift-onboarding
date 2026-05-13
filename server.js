@@ -76,15 +76,16 @@ app.post('/api/analyze', async (req, res) => {
     const SYSTEM_TOKENS = Math.ceil(multilingualPrompt.length / 4);
     const AVAILABLE     = TPM_LIMIT - RESPONSE_TOKENS - SYSTEM_TOKENS;
 
-    // Extract ALL document/transcript text — Hebrew PDFs need more characters
-    // since Hebrew characters can be multi-byte
+    // Extract ALL document/transcript text
     const docText = contentParts
       .map(p => p.text || '')
-      .filter(t => t.includes('===') || t.toLowerCase().includes('transcript'))
+      .filter(t => t.trim().length > 20)
       .join('\n')
       .slice(0, 3500);
 
-    const docTokens = Math.ceil((docText.length * 1.5) / 4); // Hebrew tokens ~1.5x longer
+    console.log(`docText length: ${docText.length} chars, first 200: ${docText.slice(0, 200)}`);
+
+    const docTokens = Math.ceil((docText.length * 1.5) / 4);
 
     // Split field summary lines into batches that fit within token budget
     const fieldLines = fieldSummary.split('\n');

@@ -1504,6 +1504,7 @@ async function readFile(file) {
         pages.push(content.items.map(item => item.str).join(' '));
       }
       const text = pages.join('\n').trim();
+      console.log(`PDF ${file.name}: extracted ${text.length} chars`);
       return { kind: 'text', content: text && text.length > 20 ? text : `[PDF: ${file.name} — no selectable text (may be scanned)]` };
     } catch(e) {
       return { kind: 'text', content: `[PDF: ${file.name} — extraction failed: ${e.message}]` };
