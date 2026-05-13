@@ -156,18 +156,11 @@ app.post('/api/analyze', async (req, res) => {
   const { contentParts, fieldSummary, systemPrompt } = req.body;
   if (!contentParts || !fieldSummary) return res.status(400).json({ error: 'Missing contentParts or fieldSummary' });
 
-  const groqKey = process.env.GROQ_API_KEY;
-  if (!groqKey) return res.status(500).json({ error: 'GROQ_API_KEY not configured on server' });
-
-  // Set a hard timeout so Railway doesn't kill us first
-  res.setTimeout && res.setTimeout(0);
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  if (!anthropicKey) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured on server' });
 
   try {
-    const MODEL          = 'llama-3.3-70b-versatile'; // 30k TPM on free tier
-    const MAX_DOC_CHARS  = 12000; // safe limit for this model
-    const RESPONSE_TOKENS = 2000;
-
-    const multilingualPrompt = systemPrompt +
+    const enhancedPrompt = systemPrompt +
       '\n\nADDITIONAL RULES: Documents may be in Hebrew, Arabic, or other languages. ' +
       'Extract and return values in English. Transliterate Hebrew/Arabic names to English letters. ' +
       'NEVER invent data. NEVER use placeholder values. NEVER hallucinate. ' +
@@ -182,52 +175,46 @@ app.post('/api/analyze', async (req, res) => {
       'WRONG:   {"companyNameInEnglish": {"value": "Name of the Business", "confidence": "high"}}\n' +
       'The value is ALWAYS real data from the document, NEVER the question/field label text.';
 
-    // ── 1. Extract and cap document text ──────────────────────
-    const allDocText = contentParts
+    // Build the user message — Claude handles large context natively, no chunking needed
+    const userText = contentParts
       .map(p => p.text || '')
       .filter(t => t.trim().length > 20)
       .join('\n');
 
-    console.log(`Doc text: ${allDocText.length} chars`);
+    console.log(`Sending ${userText.length} chars to Claude Sonnet`);
 
-    // Cap at MAX_DOC_CHARS — split into chunks if longer
-    const docChunks = [];
-    for (let i = 0; i < Math.max(allDocText.length, 1); i += MAX_DOC_CHARS) {
-      docChunks.push(allDocText.slice(i, i + MAX_DOC_CHARS));
-    }
-    console.log(`${docChunks.length} doc chunk(s), model: ${MODEL}`);
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': anthropicKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        system: enhancedPrompt,
+        messages: [{ role: 'user', content: userText }]
+      })
+    });
 
-    // ── 2. Run one request per doc chunk (all fields each time) ─
-    const mergedExtracted = {};
-    let lastSummary = '';
-
-    for (let ci = 0; ci < docChunks.length; ci++) {
-      const userText = `Extract real data values from the document text below and map them to the field IDs.
-The QUESTION shows what information to look for. The value must come from the document — NEVER from the QUESTION text itself.
-
-${fieldSummary}
-
----
-
-DOCUMENT TEXT (part ${ci + 1} of ${docChunks.length}):
-${docChunks[ci]}`;
-
-      const parsed = await callGroq(groqKey, multilingualPrompt, userText, RESPONSE_TOKENS, MODEL);
-      if (parsed?.extracted) {
-        for (const [k, v] of Object.entries(parsed.extracted)) {
-          if (v?.value && !mergedExtracted[k]) {
-            mergedExtracted[k] = v;
-          }
-        }
-        lastSummary = parsed.summary || lastSummary;
-      }
-
-      // Small pause only if multiple chunks
-      if (ci < docChunks.length - 1) await new Promise(r => setTimeout(r, 300));
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      return res.status(response.status).json({ error: err.error?.message || `Claude error ${response.status}` });
     }
 
-    console.log(`Extracted ${Object.keys(mergedExtracted).length} fields from ${docChunks.length} chunk(s)`);
-    res.json({ extracted: mergedExtracted, summary: lastSummary || 'Extraction complete' });
+    const data = await response.json();
+    const text = data.content?.[0]?.text || '';
+
+    console.log(`Claude response: ${text.length} chars`);
+
+    const parsed = parseJSON(text);
+    if (parsed) {
+      console.log(`Extracted ${Object.keys(parsed.extracted || {}).length} fields`);
+      res.json(parsed);
+    } else {
+      res.json({ extracted: {}, summary: 'No extractable data found' });
+    }
 
   } catch (e) {
     console.error('Analyze error:', e);
