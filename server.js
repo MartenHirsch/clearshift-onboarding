@@ -14,10 +14,18 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ── Startup diagnostics ───────────────────────────────────────
+console.log('ENV CHECK:',
+  'ANTHROPIC_API_KEY=', process.env.ANTHROPIC_API_KEY ? 'SET(' + process.env.ANTHROPIC_API_KEY.slice(0,8) + '...)' : 'MISSING',
+  'GROQ_API_KEY=', process.env.GROQ_API_KEY ? 'SET' : 'MISSING',
+  'DATABASE_URL=', process.env.DATABASE_URL ? 'SET' : 'MISSING'
+);
+
 // ── Database setup (PostgreSQL) ───────────────────────────────
+const dbUrl = process.env.DATABASE_URL || '';
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL?.includes('railway') ? { rejectUnauthorized: false } : false
+  connectionString: dbUrl,
+  ssl: dbUrl ? { rejectUnauthorized: false } : false
 });
 
 async function initDB() {
