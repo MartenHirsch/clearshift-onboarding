@@ -3,9 +3,6 @@ if (!process.env.RAILWAY_ENVIRONMENT) {
   require('dotenv').config();
 }
 
-// Temporary hardcoded fallbacks for Railway testing
-if (!process.env.ANTHROPIC_API_KEY) process.env.ANTHROPIC_API_KEY = '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
-if (!process.env.GROQ_API_KEY)      process.env.GROQ_API_KEY      = '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';
 const express    = require('express');
 const multer     = require('multer');
 const fetch      = require('node-fetch');
