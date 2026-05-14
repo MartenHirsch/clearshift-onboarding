@@ -180,7 +180,10 @@ async function initDB() {
 }
 
 initDB().catch(err => console.error('DB init error:', err));
+<<<<<<< HEAD
 
+=======
+>>>>>>> 880dc51952e8097cb61184998a26e0687818dc0b
 // ── Temporary: force-create admin (remove after first login) ──
 app.get('/api/auth/reset-admin', async (req, res) => {
   const secret = req.query.secret;
@@ -200,7 +203,10 @@ app.get('/api/auth/reset-admin', async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+<<<<<<< HEAD
 
+=======
+>>>>>>> 880dc51952e8097cb61184998a26e0687818dc0b
 // ── Auth routes ───────────────────────────────────────────────
 app.get('/login', (req, res) => {
   if (req.session?.user) return res.redirect('/');
