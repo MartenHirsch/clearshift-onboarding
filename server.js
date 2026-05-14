@@ -54,6 +54,7 @@ app.use((req, res, next) => {
   if (req.path === '/login' || req.path === '/api/auth/login' || req.path === '/api/auth/logout') return next();
   // Allow API auth check through
   if (req.path === '/api/auth/me') return next();
+  if (req.path === '/api/auth/reset-admin') return next();
   // Allow admin reset (protected by session secret)
   if (req.path === '/api/auth/reset-admin') return next();
   // Protect everything else
