@@ -54,6 +54,8 @@ app.use((req, res, next) => {
   if (req.path === '/login' || req.path === '/api/auth/login' || req.path === '/api/auth/logout') return next();
   // Allow API auth check through
   if (req.path === '/api/auth/me') return next();
+  // Allow admin reset (protected by session secret)
+  if (req.path === '/api/auth/reset-admin') return next();
   // Protect everything else
   if (!req.session?.user) {
     if (req.path.startsWith('/api/')) {
@@ -178,6 +180,26 @@ async function initDB() {
 }
 
 initDB().catch(err => console.error('DB init error:', err));
+
+// ── Temporary: force-create admin (remove after first login) ──
+app.get('/api/auth/reset-admin', async (req, res) => {
+  const secret = req.query.secret;
+  if (secret !== (SESSION_SECRET || 'none')) {
+    return res.status(403).json({ error: 'Invalid secret' });
+  }
+  try {
+    const defaultPass = process.env.ADMIN_PASSWORD || 'ChangeMe123!';
+    const hash = await bcrypt.hash(defaultPass, 12);
+    await pool.query(`
+      INSERT INTO users (username, password_hash, role, active)
+      VALUES ('admin', $1, 'admin', TRUE)
+      ON CONFLICT (username) DO UPDATE SET password_hash = $1, active = TRUE
+    `, [hash]);
+    res.json({ success: true, message: `Admin account set/reset. Username: admin, Password: ${defaultPass}` });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 
 // ── Auth routes ───────────────────────────────────────────────
 app.get('/login', (req, res) => {
