@@ -2182,7 +2182,7 @@ async function loadUsers() {
               <button class="field-edit-save" style="font-size:10px;padding:3px 8px;background:var(--surface2);color:var(--text-dim);border:1px solid var(--border2)"
                 onclick="toggleUserActive(${u.id}, ${!u.active})">${u.active ? 'Deactivate' : 'Activate'}</button>
               <button class="field-edit-cancel" style="font-size:10px;padding:3px 8px;color:var(--danger);border-color:rgba(255,107,107,0.3)"
-                onclick="removeUser(${u.id}, '${escHtml(u.username)}')">Delete</button>
+                onclick="removeUser(${u.id})" data-username="${escHtml(u.username)}">Delete</button>
             ` : ''}
           </div>
         </div>`).join('')}`;
@@ -2222,7 +2222,9 @@ async function toggleUserActive(id, active) {
   await loadUsers();
 }
 
-async function removeUser(id, username) {
+async function removeUser(id) {
+  const btn = document.querySelector(`[onclick="removeUser(${id})"]`);
+  const username = btn?.dataset?.username || 'this user';
   if (!confirm(`Delete user "${username}"? This cannot be undone.`)) return;
   await fetch(`/api/users/${id}`, { method: 'DELETE' });
   await loadUsers();
@@ -2232,6 +2234,18 @@ document.addEventListener('DOMContentLoaded', () => {
   initAuth();
   setupUpload();
   renderNav();
+
+  // Applicant search
+  const input    = document.getElementById('applicantSearchInput');
+  const dropdown = document.getElementById('applicantDropdown');
+  input.addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => searchApplicants(input.value), 250);
+  });
+  input.addEventListener('focus', () => searchApplicants(input.value));
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#applicantSearchWrap')) dropdown.style.display = 'none';
+  });
 });
 
 // ===== PROGRESS UPDATE (lightweight — no full re-render) =====
@@ -2253,8 +2267,11 @@ function updateProgress() {
     const bp = BP[fid]; if (bp && bv && !bp.some(t => bv.toLowerCase().includes(t))) return false;
     return true;
   }
+  // Exclude kybMulti sections (directors, reps) which have no extractedData fields
   const activeSecs = SCHEMA.sections.filter(s => !s.condition || !(isFP && !isNP));
-  const allRequired = activeSecs.flatMap(s => s.fields.filter(f => f.required && fv(f.id)));
+  const allRequired = activeSecs
+    .filter(s => !s.kybMulti || s.fields.length > 0) // only include kybMulti if they have base fields
+    .flatMap(s => s.fields.filter(f => f.required && fv(f.id)));
   const filled = allRequired.filter(f => extractedData[f.id]);
   const pct = allRequired.length > 0 ? Math.round((filled.length / allRequired.length) * 100) : 0;
   document.getElementById('progressText').textContent = `${pct}% complete`;
@@ -2434,6 +2451,7 @@ function newApplicant() {
   unsavedChanges       = false;
   uploadedFiles        = [];
   audioFiles           = [];
+  kybPersons           = { ubos: [], directors: [], representatives: [] };
   renderFileList();
   renderAudioFileList();
   document.getElementById('transcriptSection').style.display = 'none';
@@ -2484,24 +2502,6 @@ async function loadApplicant(id) {
 
 // Applicant search
 let searchTimer = null;
-document.addEventListener('DOMContentLoaded', () => {
-  const input    = document.getElementById('applicantSearchInput');
-  const dropdown = document.getElementById('applicantDropdown');
-
-  input.addEventListener('input', () => {
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(() => searchApplicants(input.value), 250);
-  });
-
-  input.addEventListener('focus', () => searchApplicants(input.value));
-
-  document.addEventListener('click', e => {
-    if (!e.target.closest('#applicantSearchWrap')) {
-      dropdown.style.display = 'none';
-    }
-  });
-});
-
 async function searchApplicants(q) {
   const dropdown = document.getElementById('applicantDropdown');
   try {
@@ -3100,8 +3100,13 @@ function renderDashboard() {
   }
 
   // Calculate stats using only active sections and visible fields
-  const allRequiredFields = activeSections.flatMap(s => s.fields.filter(f => f.required && fieldVisible(f.id)));
-  const allFields = activeSections.flatMap(s => s.fields.filter(f => fieldVisible(f.id)));
+  // Exclude kybMulti sections that have no extractedData fields (directors, reps)
+  const allRequiredFields = activeSections
+    .filter(s => !s.kybMulti || s.fields.length > 0)
+    .flatMap(s => s.fields.filter(f => f.required && fieldVisible(f.id)));
+  const allFields = activeSections
+    .filter(s => !s.kybMulti || s.fields.length > 0)
+    .flatMap(s => s.fields.filter(f => fieldVisible(f.id)));
   const completedRequired = allRequiredFields.filter(f => extractedData[f.id]);
   const completedAll = allFields.filter(f => extractedData[f.id]);
   const missingRequired = allRequiredFields.filter(f => !extractedData[f.id]);
@@ -3802,6 +3807,9 @@ async function submitSumsubVerification(personType, applicantId) {
 
     if (data.error) throw new Error(data.error);
 
+    // Store URL safely for copy button
+    verifyLinkStore = data.verificationUrl;
+
     // Store Sumsub ID in local extractedData
     extractedData[`kyb_${personType}_sumsubId`]           = { value: data.sumsubApplicantId, confidence: 'high', manual: false, sources: ['sumsub'] };
     extractedData[`kyb_${personType}_verificationStatus`] = { value: 'link_sent', confidence: 'high', manual: false, sources: ['sumsub'] };
@@ -3816,7 +3824,7 @@ async function submitSumsubVerification(personType, applicantId) {
         <div style="display:flex;gap:8px;align-items:center">
           <input type="text" value="${data.verificationUrl}" readonly
             style="flex:1;background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-size:10px;padding:6px 10px;font-family:monospace">
-          <button class="field-edit-save" style="padding:6px 12px;font-size:11px" onclick="navigator.clipboard.writeText('${data.verificationUrl}').then(()=>this.textContent='Copied!').catch(()=>{})">Copy</button>
+          <button class="field-edit-save" style="padding:6px 12px;font-size:11px" onclick="copyToClipboard(this, verifyLinkStore)">Copy</button>
         </div>
       </div>`;
 
@@ -3849,6 +3857,18 @@ async function checkSumsubStatus(personType, sumsubId, applicantId) {
   } catch(e) {
     alert('Status check error: ' + e.message);
   }
+}
+
+// Store verification URL safely outside template literals
+let verifyLinkStore = '';
+
+function copyToClipboard(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  }).catch(() => {
+    prompt('Copy this link:', text);
+  });
 }
 
 function closeSumsubModal(e) {
@@ -4029,6 +4049,7 @@ async function submitPersonVerification(listKey, idx) {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
 
+    verifyLinkStore = data.verificationUrl;
     kybPersons[listKey][idx].verificationStatus = 'link_sent';
     kybPersons[listKey][idx].sumsubId = data.sumsubApplicantId;
     saveKybPersons();
@@ -4041,7 +4062,7 @@ async function submitPersonVerification(listKey, idx) {
       <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px">Share this link with ${escHtml(firstName)} ${escHtml(lastName)}:</div>
       <div style="display:flex;gap:8px;align-items:center">
         <input type="text" value="${escHtml(data.verificationUrl)}" readonly style="flex:1;background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-size:10px;padding:6px 10px;font-family:monospace">
-        <button class="field-edit-save" style="padding:6px 12px;font-size:11px" onclick="navigator.clipboard.writeText('${escHtml(data.verificationUrl)}')">Copy</button>
+        <button class="field-edit-save" style="padding:6px 12px;font-size:11px" onclick="copyToClipboard(this, verifyLinkStore)">Copy</button>
       </div></div>`;
     btn.textContent = 'Link Created ✓';
   } catch(e) {

@@ -55,8 +55,6 @@ app.use((req, res, next) => {
   if (req.path === '/login' || req.path === '/api/auth/login' || req.path === '/api/auth/logout') return next();
   // Allow API auth check through
   if (req.path === '/api/auth/me') return next();
-  // Allow admin reset (protected by session secret)
-  if (req.path === '/api/auth/reset-admin') return next();
   // Protect everything else
   if (!req.session?.user) {
     if (req.path.startsWith('/api/')) {
@@ -110,6 +108,11 @@ function requireRole(...roles) {
 const pool = new Pool({
   connectionString: DB_URL,
   ssl: DB_URL ? { rejectUnauthorized: false } : false
+});
+
+// Prevent unhandled pool errors from crashing the process
+pool.on('error', (err) => {
+  console.error('Unexpected DB pool error:', err.message);
 });
 
 async function initDB() {
@@ -181,26 +184,6 @@ async function initDB() {
 }
 
 initDB().catch(err => console.error('DB init error:', err));
-
-// ── Temporary: force-create admin (remove after first login) ──
-app.get('/api/auth/reset-admin', async (req, res) => {
-  const secret = req.query.secret;
-  if (secret !== (SESSION_SECRET || 'none')) {
-    return res.status(403).json({ error: 'Invalid secret' });
-  }
-  try {
-    const defaultPass = process.env.ADMIN_PASSWORD || 'ChangeMe123!';
-    const hash = await bcrypt.hash(defaultPass, 12);
-    await pool.query(`
-      INSERT INTO users (username, password_hash, role, active)
-      VALUES ('admin', $1, 'admin', TRUE)
-      ON CONFLICT (username) DO UPDATE SET password_hash = $1, active = TRUE
-    `, [hash]);
-    res.json({ success: true, message: `Admin account set/reset. Username: admin, Password: ${defaultPass}` });
-  } catch(e) {
-    res.status(500).json({ error: e.message });
-  }
-});
 
 // ── Auth routes ───────────────────────────────────────────────
 app.get('/login', (req, res) => {
@@ -619,28 +602,42 @@ app.post('/api/sumsub/webhook', express.json(), async (req, res) => {
 
     if (type === 'applicantReviewed' && sumsubId) {
       const answer = reviewResult?.reviewAnswer || 'pending';
-      // Find the applicant by sumsubId stored in fields
+      const statusMap = { GREEN: 'verified', RED: 'rejected', ERROR: 'error' };
+      const newStatus = statusMap[answer] || 'pending';
+
+      // Find the applicant by scanning kybPersons lists for matching sumsubId
       const rows = await pool.query(`SELECT id, fields FROM applicants`);
       for (const row of rows.rows) {
         let fields = {};
         try { fields = decryptFields(JSON.parse(row.fields)); } catch(e) {}
 
-        for (const personType of ['ubo', 'dir', 'rep']) {
-          const idKey     = `kyb_${personType}_sumsubId`;
-          const statusKey = `kyb_${personType}_verificationStatus`;
-          if (fields[idKey]?.value === sumsubId) {
-            const statusMap = { GREEN: 'verified', RED: 'rejected', ERROR: 'error' };
-            fields[statusKey] = {
-              value: statusMap[answer] || 'pending',
-              confidence: 'high', manual: false, sources: ['sumsub']
-            };
-            const encFields = encryptFields(fields);
-            await pool.query(`UPDATE applicants SET fields = $1, updated_at = NOW() WHERE id = $2`,
-              [JSON.stringify(encFields), row.id]);
-            console.log(`Sumsub webhook: ${personType} applicant ${sumsubId} → ${answer}`);
-            break;
+        // Check new multi-person kybPersons structure
+        let updated = false;
+        try {
+          const kybRaw = fields['__kybPersons']?.value;
+          if (kybRaw) {
+            const kyb = JSON.parse(kybRaw);
+            for (const listKey of ['ubos', 'directors', 'representatives']) {
+              if (!kyb[listKey]) continue;
+              for (const person of kyb[listKey]) {
+                if (person.sumsubId === sumsubId) {
+                  person.verificationStatus = newStatus;
+                  updated = true;
+                  break;
+                }
+              }
+              if (updated) break;
+            }
+            if (updated) {
+              fields['__kybPersons'] = { value: JSON.stringify(kyb), confidence: 'high', manual: true, sources: ['sumsub'] };
+              const encFields = encryptFields(fields);
+              await pool.query(`UPDATE applicants SET fields = $1, updated_at = NOW() WHERE id = $2`,
+                [JSON.stringify(encFields), row.id]);
+              console.log(`Sumsub webhook: applicant ${sumsubId} → ${newStatus}`);
+              break;
+            }
           }
-        }
+        } catch(e) { console.error('Webhook parse error:', e.message); }
       }
     }
     res.json({ received: true });
@@ -710,10 +707,9 @@ app.post('/api/analyze', async (req, res) => {
       'has explicitly and directly stated Yes, No, or Uncertain. ' +
       'Do NOT infer "No" from silence. If not directly answered, omit it entirely.' +
       '\n\nKYB HEBREW REGISTRY: שם חברה=company name→kyb_legalName, מספר חברה=reg number→kyb_regNumber, ' +
-      'כתובת התאגיד=address→kyb_regAddress, ' +
-      'בעלי מניות=shareholders: if shareholder name contains בע"מ/Ltd/LLC/Inc it is a COMPANY not a person → set kyb_ubo_hasCorporateShareholder="Yes — one or more corporate shareholders exist" and kyb_ubo_corporateShareholderName=company name; individual shareholders→kyb_ubo fields, ' +
-      'דירקטורים=directors→kyb_dir fields, transliterate Hebrew names to English. ' +
-      'If multiple directors/UBOs, extract the primary individual one.' +
+      'כתובת התאגיד=address→kyb_regAddress, תאריך רישום=reg date→kyb_regDate, ' +
+      'בעלי מניות: if shareholder name contains בע"מ/Ltd/LLC/Inc/company → set kyb_ubo_hasCorporateShareholder="Yes — one or more corporate shareholders exist" AND kyb_ubo_corporateShareholderName=that company name. Individual shareholders → list names in summary only. ' +
+      'דירקטורים/בעלי תפקידים → list ALL director/officer names in summary field only (transliterate Hebrew to English), do NOT use kyb_dir_ fields. ' +
       'FIELD_ID="companyNameInEnglish" QUESTION="Name of the Business"\n' +
       'Document contains: "שם חברה: גרניטה - מקבוצת שאהין בע\'\'מ"\n' +
       'CORRECT: {"companyNameInEnglish": {"value": "Granita - Shahin Group Ltd", "confidence": "high"}}\n' +
