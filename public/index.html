@@ -1359,6 +1359,23 @@
     letter-spacing: 0.04em;
   }
 
+  /* Person cards */
+  .person-card {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    margin: 8px 4px;
+    overflow: hidden;
+  }
+  .person-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+
   /* ===== PROGRESS OVERLAY ===== */
   .progress-overlay {
     display: none;
@@ -1961,101 +1978,117 @@ const SCHEMA = {
     },
     {
       "id": "kybUBO",
-      "title": "KYB — Ultimate Beneficial Owner (UBO)",
+      "title": "KYB — Ultimate Beneficial Owners (UBOs)",
       "kyb": true,
+      "kybMulti": "ubos",
       "fields": [
         { "id": "kyb_ubo_hasCorporateShareholder", "title": "Does the company have a corporate shareholder (company as owner)?", "type": "select", "required": true,
           "options": ["No — all shareholders are individuals", "Yes — one or more corporate shareholders exist"] },
-        { "id": "kyb_ubo_corporateShareholderName", "title": "Corporate shareholder name(s)", "type": "textArea", "required": false },
-        { "id": "kyb_ubo_corporateShareholderPct",  "title": "Corporate shareholder ownership %", "type": "text", "required": false },
-        { "id": "kyb_ubo_corporateShareholderCountry", "title": "Corporate shareholder country of incorporation", "type": "countrySelect", "required": false },
-        { "id": "kyb_ubo_corporateRegistryDoc", "title": "Corporate shareholder registry extract (file)", "type": "fileAttachment", "required": false },
-        { "id": "kyb_ubo_sameAsDirector","title": "UBO is the same person as the Director/CEO?", "type": "select", "required": false, "options": ["Yes", "No"] },
-        { "id": "kyb_ubo_firstName",     "title": "UBO first name",                         "type": "text",           "required": true },
-        { "id": "kyb_ubo_middleName",    "title": "UBO middle name",                        "type": "text",           "required": false },
-        { "id": "kyb_ubo_lastName",      "title": "UBO last name",                          "type": "text",           "required": true },
-        { "id": "kyb_ubo_dob",           "title": "UBO date of birth",                      "type": "dateTime",       "required": true },
-        { "id": "kyb_ubo_nationality",   "title": "UBO nationality",                        "type": "countrySelect",  "required": true },
-        { "id": "kyb_ubo_countryOfResidence", "title": "UBO country of residence",          "type": "countrySelect",  "required": true },
-        { "id": "kyb_ubo_address",       "title": "UBO residential address",                "type": "textArea",       "required": true },
-        { "id": "kyb_ubo_email",         "title": "UBO email address",                      "type": "text",           "required": true },
-        { "id": "kyb_ubo_phone",         "title": "UBO phone number",                       "type": "text",           "required": false },
-        { "id": "kyb_ubo_idType",        "title": "UBO identity document type",             "type": "select",         "required": true,
-          "options": ["Passport", "National ID Card", "Driver's Licence", "Residence Permit"] },
-        { "id": "kyb_ubo_idNumber",      "title": "UBO identity document number",           "type": "text",           "required": true },
-        { "id": "kyb_ubo_idExpiry",      "title": "UBO identity document expiry date",      "type": "dateTime",       "required": false },
-        { "id": "kyb_ubo_idIssuingCountry", "title": "UBO document issuing country",        "type": "countrySelect",  "required": false },
-        { "id": "kyb_ubo_ownershipPct",  "title": "UBO ownership percentage (%)",           "type": "text",           "required": true },
-        { "id": "kyb_ubo_ownershipType", "title": "UBO ownership type",                     "type": "select",         "required": false,
-          "options": ["Direct", "Indirect", "Both direct and indirect"] },
-        { "id": "kyb_ubo_controlType",   "title": "Nature of control / voting rights",      "type": "multiSelect",    "required": false,
-          "options": ["Share ownership", "Voting rights", "Right to appoint directors", "Significant influence", "Other"] },
-        { "id": "kyb_ubo_pep",           "title": "Is the UBO a Politically Exposed Person?", "type": "select",      "required": true,
-          "options": ["No", "Yes", "Close associate of a PEP"] },
-        { "id": "kyb_ubo_pepDetails",    "title": "UBO PEP details (if applicable)",        "type": "textArea",       "required": false },
-        { "id": "kyb_ubo_idDoc",         "title": "UBO passport / ID document (file)",      "type": "fileAttachment", "required": true },
-        { "id": "kyb_ubo_proofAddress",  "title": "UBO proof of address — utility bill / bank statement max 3 months old (file)", "type": "fileAttachment", "required": true },
-        { "id": "kyb_ubo_selfie",        "title": "UBO selfie with ID (file)",              "type": "fileAttachment", "required": false }
+        { "id": "kyb_ubo_corporateShareholderName",    "title": "Corporate shareholder name(s)",                      "type": "textArea",       "required": false },
+        { "id": "kyb_ubo_corporateShareholderPct",     "title": "Corporate shareholder ownership %",                  "type": "text",           "required": false },
+        { "id": "kyb_ubo_corporateShareholderCountry", "title": "Corporate shareholder country of incorporation",     "type": "countrySelect",  "required": false },
+        { "id": "kyb_ubo_corporateRegistryDoc",        "title": "Corporate shareholder registry extract (file)",      "type": "fileAttachment", "required": false }
       ]
     },
     {
       "id": "kybDirector",
-      "title": "KYB — Director / CEO",
+      "title": "KYB — Directors & Officers",
       "kyb": true,
-      "fields": [
-        { "id": "kyb_dir_sameAsUBO",     "title": "Director/CEO is the same person as the UBO?", "type": "select", "required": false, "options": ["Yes", "No"] },
-        { "id": "kyb_dir_firstName",     "title": "Director first name",                    "type": "text",           "required": true },
-        { "id": "kyb_dir_middleName",    "title": "Director middle name",                   "type": "text",           "required": false },
-        { "id": "kyb_dir_lastName",      "title": "Director last name",                     "type": "text",           "required": true },
-        { "id": "kyb_dir_title",         "title": "Director title / position",              "type": "select",         "required": false,
-          "options": ["CEO", "Managing Director", "Executive Director", "Director", "COO", "CFO", "President", "Other"] },
-        { "id": "kyb_dir_dob",           "title": "Director date of birth",                 "type": "dateTime",       "required": false },
-        { "id": "kyb_dir_nationality",   "title": "Director nationality",                   "type": "countrySelect",  "required": false },
-        { "id": "kyb_dir_countryOfResidence", "title": "Director country of residence",     "type": "countrySelect",  "required": false },
-        { "id": "kyb_dir_address",       "title": "Director residential address",           "type": "textArea",       "required": false },
-        { "id": "kyb_dir_email",         "title": "Director email address",                 "type": "text",           "required": true },
-        { "id": "kyb_dir_phone",         "title": "Director phone number",                  "type": "text",           "required": false },
-        { "id": "kyb_dir_idType",        "title": "Director identity document type",        "type": "select",         "required": false,
-          "options": ["Passport", "National ID Card", "Driver's Licence", "Residence Permit"] },
-        { "id": "kyb_dir_idNumber",      "title": "Director identity document number",      "type": "text",           "required": false },
-        { "id": "kyb_dir_idExpiry",      "title": "Director document expiry date",          "type": "dateTime",       "required": false },
-        { "id": "kyb_dir_idIssuingCountry", "title": "Director document issuing country",   "type": "countrySelect",  "required": false },
-        { "id": "kyb_dir_pep",           "title": "Is the Director a Politically Exposed Person?", "type": "select", "required": false,
-          "options": ["No", "Yes", "Close associate of a PEP"] },
-        { "id": "kyb_dir_appointmentDate", "title": "Director appointment date",            "type": "dateTime",       "required": false },
-        { "id": "kyb_dir_idDoc",         "title": "Director passport / ID document (file)", "type": "fileAttachment", "required": false },
-        { "id": "kyb_dir_proofAddress",  "title": "Director proof of address (file)",       "type": "fileAttachment", "required": false }
-      ]
+      "kybMulti": "directors",
+      "fields": []
     },
     {
       "id": "kybRepresentative",
-      "title": "KYB — Authorised Representative",
+      "title": "KYB — Authorised Representatives",
       "kyb": true,
-      "fields": [
-        { "id": "kyb_rep_sameAsUBO",     "title": "Representative is the same person as the UBO?", "type": "select", "required": false, "options": ["Yes", "No"] },
-        { "id": "kyb_rep_sameAsDirector","title": "Representative is the same person as the Director?", "type": "select", "required": false, "options": ["Yes", "No"] },
-        { "id": "kyb_rep_firstName",     "title": "Representative first name",              "type": "text",           "required": true },
-        { "id": "kyb_rep_middleName",    "title": "Representative middle name",             "type": "text",           "required": false },
-        { "id": "kyb_rep_lastName",      "title": "Representative last name",               "type": "text",           "required": true },
-        { "id": "kyb_rep_title",         "title": "Representative title / position",        "type": "text",           "required": false },
-        { "id": "kyb_rep_dob",           "title": "Representative date of birth",           "type": "dateTime",       "required": false },
-        { "id": "kyb_rep_nationality",   "title": "Representative nationality",             "type": "countrySelect",  "required": false },
-        { "id": "kyb_rep_email",         "title": "Representative email address",           "type": "text",           "required": true },
-        { "id": "kyb_rep_phone",         "title": "Representative phone number",            "type": "text",           "required": false },
-        { "id": "kyb_rep_idType",        "title": "Representative identity document type",  "type": "select",         "required": false,
-          "options": ["Passport", "National ID Card", "Driver's Licence", "Residence Permit"] },
-        { "id": "kyb_rep_idNumber",      "title": "Representative identity document number","type": "text",           "required": false },
-        { "id": "kyb_rep_idExpiry",      "title": "Representative document expiry date",    "type": "dateTime",       "required": false },
-        { "id": "kyb_rep_idIssuingCountry", "title": "Representative document issuing country", "type": "countrySelect", "required": false },
-        { "id": "kyb_rep_authBasis",     "title": "Basis of authority",                     "type": "select",         "required": true,
-          "options": ["Director / officer of company", "Power of attorney", "Board resolution", "Signatory authority"] },
-        { "id": "kyb_rep_authDoc",       "title": "Authority document (POA / board resolution) (file)", "type": "fileAttachment", "required": false },
-        { "id": "kyb_rep_idDoc",         "title": "Representative passport / ID document (file)", "type": "fileAttachment", "required": false },
-        { "id": "kyb_rep_proofAddress",  "title": "Representative proof of address (file)", "type": "fileAttachment", "required": false }
-      ]
+      "kybMulti": "representatives",
+      "fields": []
     }
   ]
 };
+
+// ===== KYB PERSON FIELD TEMPLATES =====
+const KYB_PERSON_TEMPLATES = {
+  ubo: [
+    { id: 'firstName',       label: 'First name',              type: 'text',    required: true },
+    { id: 'middleName',      label: 'Middle name',             type: 'text',    required: false },
+    { id: 'lastName',        label: 'Last name',               type: 'text',    required: true },
+    { id: 'dob',             label: 'Date of birth',           type: 'text',    required: true },
+    { id: 'nationality',     label: 'Nationality',             type: 'text',    required: true },
+    { id: 'countryOfResidence', label: 'Country of residence', type: 'text',    required: true },
+    { id: 'address',         label: 'Residential address',     type: 'textarea',required: true },
+    { id: 'email',           label: 'Email address',           type: 'text',    required: true },
+    { id: 'phone',           label: 'Phone number',            type: 'text',    required: false },
+    { id: 'idType',          label: 'ID document type',        type: 'select',  required: true,
+      options: ['Passport', 'National ID Card', "Driver's Licence", 'Residence Permit'] },
+    { id: 'idNumber',        label: 'ID document number',      type: 'text',    required: true },
+    { id: 'idExpiry',        label: 'ID expiry date',          type: 'text',    required: false },
+    { id: 'idIssuingCountry',label: 'Document issuing country',type: 'text',    required: false },
+    { id: 'ownershipPct',    label: 'Ownership percentage (%)',type: 'text',    required: true },
+    { id: 'ownershipType',   label: 'Ownership type',          type: 'select',  required: false,
+      options: ['Direct', 'Indirect', 'Both direct and indirect'] },
+    { id: 'pep',             label: 'Politically Exposed Person?', type: 'select', required: true,
+      options: ['No', 'Yes', 'Close associate of a PEP'] },
+    { id: 'pepDetails',      label: 'PEP details (if applicable)', type: 'textarea', required: false },
+    { id: 'verificationStatus', label: 'Sumsub verification status', type: 'text', required: false },
+    { id: 'sumsubId',        label: 'Sumsub applicant ID',     type: 'text',    required: false }
+  ],
+  director: [
+    { id: 'firstName',       label: 'First name',              type: 'text',    required: true },
+    { id: 'middleName',      label: 'Middle name',             type: 'text',    required: false },
+    { id: 'lastName',        label: 'Last name',               type: 'text',    required: true },
+    { id: 'title',           label: 'Title / position',        type: 'select',  required: false,
+      options: ['CEO', 'Managing Director', 'Executive Director', 'Director', 'COO', 'CFO', 'President', 'Officer', 'Accountant', 'Other'] },
+    { id: 'appointmentDate', label: 'Appointment date',        type: 'text',    required: false },
+    { id: 'nationality',     label: 'Nationality',             type: 'text',    required: false },
+    { id: 'countryOfResidence', label: 'Country of residence', type: 'text',    required: false },
+    { id: 'address',         label: 'Address',                 type: 'textarea',required: false },
+    { id: 'email',           label: 'Email address',           type: 'text',    required: false },
+    { id: 'phone',           label: 'Phone number',            type: 'text',    required: false },
+    { id: 'idType',          label: 'ID document type',        type: 'select',  required: false,
+      options: ['Passport', 'National ID Card', "Driver's Licence", 'Residence Permit'] },
+    { id: 'idNumber',        label: 'ID document number',      type: 'text',    required: false },
+    { id: 'idExpiry',        label: 'ID expiry date',          type: 'text',    required: false },
+    { id: 'pep',             label: 'Politically Exposed Person?', type: 'select', required: false,
+      options: ['No', 'Yes', 'Close associate of a PEP'] },
+    { id: 'verificationStatus', label: 'Sumsub verification status', type: 'text', required: false },
+    { id: 'sumsubId',        label: 'Sumsub applicant ID',     type: 'text',    required: false }
+  ],
+  representative: [
+    { id: 'firstName',       label: 'First name',              type: 'text',    required: true },
+    { id: 'middleName',      label: 'Middle name',             type: 'text',    required: false },
+    { id: 'lastName',        label: 'Last name',               type: 'text',    required: true },
+    { id: 'title',           label: 'Title / position',        type: 'text',    required: false },
+    { id: 'authBasis',       label: 'Basis of authority',      type: 'select',  required: true,
+      options: ['Director / officer of company', 'Power of attorney', 'Board resolution', 'Signatory authority'] },
+    { id: 'email',           label: 'Email address',           type: 'text',    required: true },
+    { id: 'phone',           label: 'Phone number',            type: 'text',    required: false },
+    { id: 'nationality',     label: 'Nationality',             type: 'text',    required: false },
+    { id: 'idType',          label: 'ID document type',        type: 'select',  required: false,
+      options: ['Passport', 'National ID Card', "Driver's Licence", 'Residence Permit'] },
+    { id: 'idNumber',        label: 'ID document number',      type: 'text',    required: false },
+    { id: 'idExpiry',        label: 'ID expiry date',          type: 'text',    required: false },
+    { id: 'verificationStatus', label: 'Sumsub verification status', type: 'text', required: false },
+    { id: 'sumsubId',        label: 'Sumsub applicant ID',     type: 'text',    required: false }
+  ]
+};
+
+// Multi-person lists stored separately from extractedData
+// kybPersons = { ubos: [...], directors: [...], representatives: [...] }
+let kybPersons = { ubos: [], directors: [], representatives: [] };
+
+function kybPersonsKey() { return 'kyb_persons_list'; }
+
+function saveKybPersons() {
+  extractedData['__kybPersons'] = { value: JSON.stringify(kybPersons), confidence: 'high', manual: true, sources: [] };
+}
+
+function loadKybPersons() {
+  try {
+    const raw = extractedData['__kybPersons']?.value;
+    if (raw) kybPersons = JSON.parse(raw);
+  } catch(e) { kybPersons = { ubos: [], directors: [], representatives: [] }; }
+}
 
 // ===== STATE =====
 let uploadedFiles = [];
@@ -2427,6 +2460,7 @@ async function loadApplicant(id) {
     currentApplicantName = data.name;
     extractedData        = data.fields || {};
     unsavedChanges       = false;
+    loadKybPersons();
 
     showApplicantCurrent(data.name);
 
@@ -2718,15 +2752,10 @@ KYB EXTRACTION GUIDANCE — Israeli/Hebrew Registry Documents:
 - "כתובת התאגיד" = registered address → extract to kyb_regAddress
 - "תאריך רישום" = registration date → extract to kyb_regDate
 - "סוג חברה" = company type (ישראלית=Israeli private) → extract to kyb_legalForm
-- "בעלי מניות" section = shareholders/UBOs → if shareholder is a COMPANY (has "בע\"מ", "Ltd", "LLC", "Inc" in name), extract to kyb_ubo_hasCorporateShareholder="Yes — one or more corporate shareholders exist" and kyb_ubo_corporateShareholderName; if all shareholders are individuals, set kyb_ubo_hasCorporateShareholder="No — all shareholders are individuals"
-- Individual shareholders → extract names to kyb_ubo_firstName + kyb_ubo_lastName
-- "דירקטורים" section = directors → extract names to kyb_dir_firstName + kyb_dir_lastName
-- "בעלי תפקידים" section = officers (מנכ"ל=CEO, סמנכ"ל=VP) → extract to kyb_dir_title
-- "מחזיק ב: X מניות" = ownership percentage (divide by total shares × 100) → extract to kyb_ubo_ownershipPct
-- Hebrew names: write in English transliteration (e.g. "ירון מנחם" → "Yaron Menachem")
-- If multiple directors/UBOs exist, extract the FIRST/PRIMARY one to the kyb fields
-- "אזרח ישראלי" = Israeli citizen → nationality field value: "Israel"
-- "אזרח זר" = foreign citizen → nationality unknown unless specified
+- "בעלי מניות" section = shareholders: if ANY shareholder name contains "בע\"מ", "Ltd", "LLC", "Inc", "company", or "corp" it is a COMPANY → set kyb_ubo_hasCorporateShareholder="Yes — one or more corporate shareholders exist" AND kyb_ubo_corporateShareholderName to that company's name; if ALL shareholders are individuals → set kyb_ubo_hasCorporateShareholder="No — all shareholders are individuals"
+- "דירקטורים" and "בעלי תפקידים" sections = list ALL directors/officers in the summary field (transliterate Hebrew names to English), e.g. "Directors: Yaron Menachem, Ari Dabner, Marten Hirsch; Officers: Julia Lea Buton-Partosh (officer), Chaim Henrich Hilrovich (accountant)"
+- Hebrew names: write in English transliteration (e.g. "ירון מנחם" → "Yaron Menachem", "דאבנר ארי" → "Ari Dabner", "הילרוביץ' חיים הנריך" → "Chaim Henrich Hilrovich")
+- "אזרח ישראלי" = Israeli citizen, "אזרח זר" = foreign citizen
 
 PEP RULE — CRITICAL COMPLIANCE REQUIREMENT:
 - The field "areYouAPep" must NEVER be filled unless explicitly stated
@@ -3033,6 +3062,7 @@ function resetChecklist() {
 function renderDashboard() {
   const main = document.getElementById('mainContent');
   document.getElementById('emptyState')?.remove();
+  loadKybPersons();
 
   // Determine which sections are active based on business type
   const businessTypeValue = extractedData['whatTypeOfCompanyAre']?.value || '';
@@ -3243,13 +3273,81 @@ function renderDashboard() {
 
   // Sections
   activeSections.forEach(section => {
+
+    // ── Multi-person KYB sections (UBOs, Directors, Representatives) ──
+    if (section.kybMulti) {
+      const listKey  = section.kybMulti; // 'ubos', 'directors', 'representatives'
+      const persons  = kybPersons[listKey] || [];
+      const tmplKey  = listKey === 'ubos' ? 'ubo' : listKey === 'directors' ? 'director' : 'representative';
+      const template = KYB_PERSON_TEMPLATES[tmplKey];
+      const icon     = listKey === 'ubos' ? '👤' : listKey === 'directors' ? '👔' : '🤝';
+      const label    = listKey === 'ubos' ? 'UBO' : listKey === 'directors' ? 'Director / Officer' : 'Representative';
+      const isExpanded = persons.length > 0 || (section.id === 'kybUBO');
+
+      // Corporate shareholder warning for UBO section
+      let corpWarning = '';
+      if (section.id === 'kybUBO') {
+        const corpVal  = extractedData['kyb_ubo_hasCorporateShareholder']?.value || '';
+        const corpName = extractedData['kyb_ubo_corporateShareholderName']?.value || '';
+        if (corpVal.includes('Yes')) {
+          corpWarning = `<div class="corporate-shareholder-warning">
+            <div class="csw-icon">⚠️</div>
+            <div class="csw-body">
+              <div class="csw-title">Compliance Review Required — Corporate Shareholder Detected</div>
+              <div class="csw-text">${corpName ? `<strong>${escHtml(corpName)}</strong> is listed as a corporate shareholder. ` : 'A corporate shareholder has been identified. '}
+                A company cannot be a UBO — identify the natural persons who ultimately own or control this corporate shareholder (anyone with 25%+ ownership). Obtain their details and add them as UBOs below.</div>
+              <div class="csw-actions"><span class="csw-badge">🔒 AML/KYB Requirement</span><span class="csw-badge">FATF Recommendation 24</span></div>
+            </div></div>`;
+        }
+      }
+
+      // Render person cards
+      const personCards = persons.map((person, idx) => renderPersonCard(person, idx, listKey, template, label)).join('');
+
+      const sectionFields = section.fields.filter(f => isFieldVisible(f));
+      const baseTable = sectionFields.length > 0 ? `
+        <table class="field-table" style="margin-bottom:12px">
+          <thead><tr><th style="width:35%">Field</th><th style="width:45%">Value</th><th style="width:20%">Status</th></tr></thead>
+          <tbody>${sectionFields.map(f => renderFieldRow(f)).join('')}</tbody>
+        </table>` : '';
+
+      const corpBadge = section.id === 'kybUBO' && extractedData['kyb_ubo_hasCorporateShareholder']?.value?.includes('Yes')
+        ? `<span style="font-size:10px;padding:3px 10px;border-radius:20px;background:rgba(251,191,36,0.15);color:#fbbf24;border:1px solid rgba(251,191,36,0.4)">⚠ Corporate Shareholder</span>`
+        : '';
+
+      html += `<div class="section-block kyb-section" id="section-${section.id}">
+        <div class="kyb-section-header" onclick="toggleKybSection('${section.id}')">
+          <div class="kyb-section-left">
+            <span class="kyb-icon">${icon}</span>
+            <div>
+              <div class="kyb-section-title">${section.title}</div>
+              <div class="kyb-section-sub">${persons.length} ${label}${persons.length !== 1 ? 's' : ''} added</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px" onclick="event.stopPropagation()">
+            ${corpBadge}
+            <span class="kyb-chevron" id="kyb-chevron-${section.id}" onclick="toggleKybSection('${section.id}')">${isExpanded ? '▲' : '▼'}</span>
+          </div>
+        </div>
+        <div class="kyb-section-body" id="kyb-body-${section.id}" style="display:${isExpanded ? 'block' : 'none'}">
+          ${corpWarning}
+          ${baseTable}
+          <div id="person-cards-${listKey}">${personCards}</div>
+          <div style="padding:12px 4px">
+            <button class="kyb-verify-btn" onclick="addPersonCard('${listKey}')" style="width:100%;justify-content:center;padding:10px">
+              ＋ Add ${label}
+            </button>
+          </div>
+        </div>
+      </div>`;
+      return;
+    }
+
     const sectionFields = section.fields.filter(f => isFieldVisible(f));
     if (sectionFields.length === 0) return;
 
-    // Handle "same person as" auto-population for KYB sections
+    // Handle "same person as" auto-population for KYB sections (legacy single-entry — no longer used for person sections)
     if (section.kyb) {
-      // If Director is same as UBO, copy UBO fields to Director
-      if (section.id === 'kybDirector' && extractedData['kyb_dir_sameAsUBO']?.value === 'Yes') {
         const uboToDir = { kyb_ubo_firstName:'kyb_dir_firstName', kyb_ubo_middleName:'kyb_dir_middleName',
           kyb_ubo_lastName:'kyb_dir_lastName', kyb_ubo_dob:'kyb_dir_dob', kyb_ubo_nationality:'kyb_dir_nationality',
           kyb_ubo_email:'kyb_dir_email', kyb_ubo_phone:'kyb_dir_phone', kyb_ubo_idType:'kyb_dir_idType',
@@ -3757,6 +3855,214 @@ function closeSumsubModal(e) {
   if (e.target === document.getElementById('sumsubOverlay')) {
     document.getElementById('sumsubOverlay').classList.remove('show');
   }
+}
+
+// ===== MULTI-PERSON KYB CARDS =====
+const STATUS_COLORS = {
+  verified:  { color: 'var(--accent)', bg: 'var(--complete-dim)', label: '✓ Verified' },
+  rejected:  { color: 'var(--danger)', bg: 'var(--danger-dim)',   label: '✕ Rejected' },
+  link_sent: { color: '#fbbf24',       bg: 'rgba(251,191,36,0.1)',label: '⏳ Link Sent' },
+  pending:   { color: '#fbbf24',       bg: 'rgba(251,191,36,0.1)',label: '⏳ Pending' },
+  error:     { color: 'var(--danger)', bg: 'var(--danger-dim)',   label: '⚠ Error' }
+};
+
+function renderPersonCard(person, idx, listKey, template, label) {
+  const name = [person.firstName, person.lastName].filter(Boolean).join(' ') || `${label} ${idx + 1}`;
+  const status = person.verificationStatus || '';
+  const sc = STATUS_COLORS[status];
+
+  const verifyBtnHtml = sc
+    ? (status === 'verified'
+        ? `<span style="font-size:10px;padding:3px 10px;border-radius:20px;background:${sc.bg};color:${sc.color};border:1px solid ${sc.color}40">${sc.label}</span>`
+        : `<span style="font-size:10px;padding:3px 10px;border-radius:20px;background:${sc.bg};color:${sc.color};border:1px solid ${sc.color}40">${sc.label}</span>
+           <button class="kyb-verify-btn refresh" onclick="checkPersonStatus('${listKey}', ${idx})" style="font-size:10px;padding:4px 10px">🔄 Refresh</button>`)
+    : `<button class="kyb-verify-btn" onclick="sendPersonForVerification('${listKey}', ${idx})" style="font-size:10px;padding:4px 10px">🔍 Verify</button>`;
+
+  const rows = template.filter(f => !['verificationStatus','sumsubId'].includes(f.id)).map(f => {
+    const val = person[f.id] || '';
+    const inputHtml = f.type === 'select'
+      ? `<select class="field-edit-select" onchange="savePersonField('${listKey}', ${idx}, '${f.id}', this.value)" style="width:100%;font-size:11px">
+          <option value="">— Select —</option>
+          ${(f.options||[]).map(o => `<option value="${escHtml(o)}" ${o === val ? 'selected' : ''}>${escHtml(o)}</option>`).join('')}
+         </select>`
+      : f.type === 'textarea'
+      ? `<textarea class="field-edit-input" rows="2" onchange="savePersonField('${listKey}', ${idx}, '${f.id}', this.value)" style="width:100%;font-size:11px;resize:vertical">${escHtml(val)}</textarea>`
+      : `<input type="text" class="field-edit-input" value="${escHtml(val)}" onchange="savePersonField('${listKey}', ${idx}, '${f.id}', this.value)" style="width:100%;font-size:11px">`;
+
+    const reqDot = f.required ? '<span style="color:var(--danger);margin-left:3px">●</span>' : '';
+    return `<tr>
+      <td style="width:35%;padding:6px 8px;font-size:11px;color:var(--text-dim)">${escHtml(f.label)}${reqDot}</td>
+      <td style="width:65%;padding:4px 8px">${inputHtml}</td>
+    </tr>`;
+  }).join('');
+
+  return `<div class="person-card" id="person-card-${listKey}-${idx}">
+    <div class="person-card-header">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:16px">${listKey === 'ubos' ? '👤' : listKey === 'directors' ? '👔' : '🤝'}</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text)">${escHtml(name)}</div>
+          <div style="font-size:10px;color:var(--text-dimmer)">${label} ${idx + 1}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        ${verifyBtnHtml}
+        <button class="field-edit-cancel" onclick="removePersonCard('${listKey}', ${idx})" style="font-size:11px;padding:4px 8px;color:var(--danger);border-color:rgba(255,107,107,0.3)">✕ Remove</button>
+      </div>
+    </div>
+    <table class="field-table" style="margin:0">
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+function addPersonCard(listKey) {
+  if (!kybPersons[listKey]) kybPersons[listKey] = [];
+  kybPersons[listKey].push({});
+  saveKybPersons();
+  markUnsaved();
+  refreshPersonCards(listKey);
+}
+
+function removePersonCard(listKey, idx) {
+  if (!confirm('Remove this entry?')) return;
+  kybPersons[listKey].splice(idx, 1);
+  saveKybPersons();
+  markUnsaved();
+  refreshPersonCards(listKey);
+}
+
+function savePersonField(listKey, idx, fieldId, value) {
+  if (!kybPersons[listKey]) kybPersons[listKey] = [];
+  if (!kybPersons[listKey][idx]) kybPersons[listKey][idx] = {};
+  kybPersons[listKey][idx][fieldId] = value;
+  saveKybPersons();
+  markUnsaved();
+  // Update card header name without full re-render
+  const card = document.getElementById(`person-card-${listKey}-${idx}`);
+  if (card) {
+    const p = kybPersons[listKey][idx];
+    const name = [p.firstName, p.lastName].filter(Boolean).join(' ');
+    const nameEl = card.querySelector('.person-card-header div div:first-child');
+    const tmplKey = listKey === 'ubos' ? 'ubo' : listKey === 'directors' ? 'director' : 'representative';
+    const label = listKey === 'ubos' ? 'UBO' : listKey === 'directors' ? 'Director / Officer' : 'Representative';
+    if (nameEl && name) nameEl.textContent = name;
+  }
+}
+
+function refreshPersonCards(listKey) {
+  const container = document.getElementById(`person-cards-${listKey}`);
+  if (!container) return;
+  const tmplKey  = listKey === 'ubos' ? 'ubo' : listKey === 'directors' ? 'director' : 'representative';
+  const template = KYB_PERSON_TEMPLATES[tmplKey];
+  const label    = listKey === 'ubos' ? 'UBO' : listKey === 'directors' ? 'Director / Officer' : 'Representative';
+  container.innerHTML = (kybPersons[listKey] || []).map((p, i) => renderPersonCard(p, i, listKey, template, label)).join('');
+  // Update subtitle
+  const sectionId = listKey === 'ubos' ? 'kybUBO' : listKey === 'directors' ? 'kybDirector' : 'kybRepresentative';
+  const sub = document.querySelector(`#section-${sectionId} .kyb-section-sub`);
+  if (sub) sub.textContent = `${kybPersons[listKey].length} ${label}${kybPersons[listKey].length !== 1 ? 's' : ''} added`;
+}
+
+function sendPersonForVerification(listKey, idx) {
+  const person = kybPersons[listKey]?.[idx] || {};
+  const tmplKey = listKey === 'ubos' ? 'ubo' : listKey === 'directors' ? 'dir' : 'rep';
+
+  const body = document.getElementById('sumsubModalBody');
+  const label = listKey === 'ubos' ? 'UBO' : listKey === 'directors' ? 'Director' : 'Representative';
+  document.getElementById('sumsubModalTitle').textContent = `🔍 Verify ${label}`;
+  document.getElementById('sumsubModalSubtitle').textContent = `${person.firstName || ''} ${person.lastName || ''}`.trim() || 'Unknown';
+
+  body.innerHTML = `
+    <div style="margin-bottom:16px;font-size:12px;color:var(--text-dim)">
+      Sumsub will send a verification link to the individual to complete identity verification.
+    </div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:10px;color:var(--text-dimmer);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Verification Level</div>
+      <select id="ss-level" class="field-edit-select" style="width:100%">
+        <option value="">— Select verification level —</option>
+        <option value="level-israel">Israel</option>
+        <option value="level-us">US</option>
+        <option value="level-eu">EU</option>
+      </select>
+    </div>
+    <div style="display:grid;gap:10px;margin-bottom:20px">
+      ${inputRow('First Name', 'ss-first', person.firstName || '')}
+      ${inputRow('Last Name',  'ss-last',  person.lastName  || '')}
+      ${inputRow('Email',      'ss-email', person.email     || '', 'email')}
+      ${inputRow('Phone',      'ss-phone', person.phone     || '')}
+      ${inputRow('Date of Birth (YYYY-MM-DD)', 'ss-dob', person.dob || '')}
+    </div>
+    <div id="sumsubResult" style="display:none;margin-bottom:16px"></div>
+    <div style="display:flex;gap:10px">
+      <button class="field-edit-save" style="flex:1" onclick="submitPersonVerification('${listKey}', ${idx})">Send Verification Link</button>
+      <button class="field-edit-cancel" onclick="document.getElementById('sumsubOverlay').classList.remove('show')">Cancel</button>
+    </div>`;
+
+  document.getElementById('sumsubOverlay').classList.add('show');
+}
+
+async function submitPersonVerification(listKey, idx) {
+  const levelName = document.getElementById('ss-level')?.value;
+  const firstName = document.getElementById('ss-first')?.value.trim();
+  const lastName  = document.getElementById('ss-last')?.value.trim();
+  const email     = document.getElementById('ss-email')?.value.trim();
+  const phone     = document.getElementById('ss-phone')?.value.trim();
+  const dob       = document.getElementById('ss-dob')?.value.trim();
+  const result    = document.getElementById('sumsubResult');
+
+  if (!levelName) { result.style.display='block'; result.innerHTML=`<div style="color:var(--danger);font-size:12px;padding:8px 12px;background:var(--danger-dim);border-radius:6px">Please select a verification level.</div>`; return; }
+  if (!firstName || !lastName || !email) { result.style.display='block'; result.innerHTML=`<div style="color:var(--danger);font-size:12px;padding:8px 12px;background:var(--danger-dim);border-radius:6px">First name, last name and email are required.</div>`; return; }
+
+  const btn = document.querySelector('#sumsubModalBody .field-edit-save');
+  btn.disabled = true; btn.textContent = 'Sending…'; result.style.display = 'none';
+
+  const tmplKey = listKey === 'ubos' ? 'ubo' : listKey === 'directors' ? 'dir' : 'rep';
+
+  try {
+    const res = await fetch('/api/sumsub/create', {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ personType: tmplKey, firstName, lastName, email, phone, dob,
+        applicantId: currentApplicantId, levelName,
+        externalId: `clearshift-${tmplKey}-${currentApplicantId}-${idx}-${Date.now()}` })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    kybPersons[listKey][idx].verificationStatus = 'link_sent';
+    kybPersons[listKey][idx].sumsubId = data.sumsubApplicantId;
+    saveKybPersons();
+    markUnsaved();
+    refreshPersonCards(listKey);
+
+    result.style.display = 'block';
+    result.innerHTML = `<div style="background:var(--complete-dim);border:1px solid var(--accent-dim);border-radius:8px;padding:14px">
+      <div style="color:var(--accent);font-size:13px;font-weight:600;margin-bottom:8px">✓ Verification link created</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px">Share this link with ${escHtml(firstName)} ${escHtml(lastName)}:</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="text" value="${escHtml(data.verificationUrl)}" readonly style="flex:1;background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-size:10px;padding:6px 10px;font-family:monospace">
+        <button class="field-edit-save" style="padding:6px 12px;font-size:11px" onclick="navigator.clipboard.writeText('${escHtml(data.verificationUrl)}')">Copy</button>
+      </div></div>`;
+    btn.textContent = 'Link Created ✓';
+  } catch(e) {
+    result.style.display='block'; result.innerHTML=`<div style="color:var(--danger);font-size:12px;padding:8px 12px;background:var(--danger-dim);border-radius:6px">⚠ ${e.message}</div>`;
+    btn.disabled=false; btn.textContent='Send Verification Link';
+  }
+}
+
+async function checkPersonStatus(listKey, idx) {
+  const person = kybPersons[listKey]?.[idx];
+  if (!person?.sumsubId) return;
+  try {
+    const res  = await fetch(`/api/sumsub/status/${person.sumsubId}`, { headers: getHeaders() });
+    const data = await res.json();
+    if (data.error) { alert('Status check failed: ' + data.error); return; }
+    const statusMap = { GREEN: 'verified', RED: 'rejected' };
+    person.verificationStatus = statusMap[data.reviewAnswer] || data.reviewStatus || 'pending';
+    saveKybPersons();
+    markUnsaved();
+    refreshPersonCards(listKey);
+  } catch(e) { alert('Status check error: ' + e.message); }
 }
 
 function toggleKybSection(sectionId) {
