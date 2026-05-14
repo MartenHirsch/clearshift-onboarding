@@ -814,6 +814,50 @@
   .save-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
   .save-btn.saved { border-color: var(--accent-dim); color: var(--accent); }
 
+  /* User menu */
+  .user-menu { position: relative; }
+  .user-btn {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: var(--radius-sm); color: var(--text-dim);
+    font-family: 'DM Mono', monospace; font-size: 12px;
+    padding: 7px 12px; cursor: pointer; transition: all 0.15s;
+  }
+  .user-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .user-icon { font-size: 14px; }
+  .user-role-badge {
+    font-size: 9px; padding: 1px 6px; border-radius: 8px;
+    background: var(--accent-glow); color: var(--accent);
+    border: 1px solid var(--accent-dim); text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .user-role-badge.reviewer { background: rgba(96,165,250,0.1); color: #60a5fa; border-color: rgba(96,165,250,0.3); }
+  .user-dropdown {
+    position: absolute; top: calc(100% + 6px); right: 0;
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: var(--radius); min-width: 160px; z-index: 300;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .user-dropdown-item {
+    padding: 10px 14px; cursor: pointer; font-size: 12px;
+    color: var(--text-dim); transition: background 0.12s;
+    border-bottom: 1px solid var(--border);
+  }
+  .user-dropdown-item:last-child { border-bottom: none; }
+  .user-dropdown-item:hover { background: var(--accent-glow); color: var(--text); }
+
+  /* User management table */
+  .user-row {
+    display: grid; grid-template-columns: 1fr 80px 80px 100px;
+    gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--border);
+    font-size: 12px; align-items: center;
+  }
+  .user-row:last-child { border-bottom: none; }
+  .user-row-name { color: var(--text); font-weight: 500; }
+  .user-row-role { font-size: 10px; }
+  .user-row-status { font-size: 10px; color: var(--text-dimmer); }
+  .user-row-actions { display: flex; gap: 6px; justify-content: flex-end; }
+
   /* ===== INLINE FIELD EDITING ===== */
   .field-value-wrap {
     display: flex;
@@ -948,6 +992,57 @@
     flex-shrink: 0;
   }
   .ms-actions { display: flex; gap: 6px; }
+
+  /* ===== AUDIT TRAIL MODAL ===== */
+  .audit-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(13,15,14,0.82);
+    backdrop-filter: blur(6px);
+    z-index: 600;
+    align-items: center;
+    justify-content: center;
+  }
+  .audit-overlay.show { display: flex; }
+  .audit-modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 14px;
+    width: 680px;
+    max-width: calc(100vw - 40px);
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+  }
+  .audit-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .audit-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+  .audit-subtitle { font-size: 11px; color: var(--text-dim); }
+  .audit-close { background: none; border: none; color: var(--text-dim); font-size: 16px; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: color 0.15s; }
+  .audit-close:hover { color: var(--text); }
+  .audit-tabs { display: flex; gap: 2px; padding: 12px 24px 0; border-bottom: 1px solid var(--border); }
+  .audit-tab { background: none; border: none; color: var(--text-dim); font-family: 'DM Mono', monospace; font-size: 12px; padding: 8px 16px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s; }
+  .audit-tab:hover { color: var(--text); }
+  .audit-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .audit-body { overflow-y: auto; padding: 16px 24px; flex: 1; }
+  .audit-row { display: grid; grid-template-columns: 140px 1fr 1fr 110px; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 11px; align-items: start; }
+  .audit-row:last-child { border-bottom: none; }
+  .audit-field { color: var(--text-dim); font-size: 10px; }
+  .audit-old { color: var(--danger); font-size: 10px; word-break: break-all; }
+  .audit-new { color: var(--accent); font-size: 10px; word-break: break-all; }
+  .audit-time { color: var(--text-dimmer); font-size: 10px; text-align: right; }
+  .audit-access-row { display: grid; grid-template-columns: 80px 1fr 160px; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 11px; }
+  .audit-access-row:last-child { border-bottom: none; }
+  .audit-empty { color: var(--text-dimmer); font-size: 12px; padding: 20px 0; text-align: center; }
+  .retention-flag { display: inline-flex; align-items: center; gap: 6px; background: var(--warn-dim); border: 1px solid rgba(255,184,77,0.3); border-radius: var(--radius-sm); padding: 3px 8px; font-size: 10px; color: var(--warn); margin-left: 8px; }
+
   .checklist-block {
     background: var(--surface);
     border: 1px solid var(--border2);
@@ -1151,6 +1246,80 @@
   .section-block {
     margin-bottom: 32px;
   }
+
+  /* ===== KYB COLLAPSIBLE SECTIONS ===== */
+  .kyb-section {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-left: 3px solid #60a5fa;
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+
+  .kyb-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+
+  .kyb-section-header:hover { background: rgba(96,165,250,0.05); }
+
+  .kyb-section-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .kyb-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  .kyb-section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .kyb-section-sub {
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .kyb-chevron {
+    font-size: 11px;
+    color: #60a5fa;
+    width: 20px;
+    text-align: center;
+  }
+
+  .kyb-section-body {
+    border-top: 1px solid var(--border);
+    padding: 0 4px 4px;
+  }
+
+  .kyb-verify-btn {
+    background: rgba(96,165,250,0.1);
+    border: 1px solid rgba(96,165,250,0.3);
+    border-radius: var(--radius-sm);
+    color: #60a5fa;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .kyb-verify-btn:hover { background: rgba(96,165,250,0.2); border-color: #60a5fa; }
+  .kyb-verify-btn.refresh { background: rgba(251,191,36,0.1); border-color: rgba(251,191,36,0.3); color: #fbbf24; }
+  .kyb-verify-btn.refresh:hover { background: rgba(251,191,36,0.2); }
 
   /* ===== PROGRESS OVERLAY ===== */
   .progress-overlay {
@@ -1385,6 +1554,8 @@
       <div class="applicant-current" id="applicantCurrent" style="display:none">
         <span class="applicant-current-icon">🏢</span>
         <span id="applicantCurrentName" class="applicant-current-name">—</span>
+        <button class="applicant-action-btn" onclick="viewAuditTrail()" title="View audit trail">📋 Audit</button>
+        <button class="applicant-action-btn" onclick="deleteApplicant()" title="Delete applicant (GDPR erasure)" style="color:var(--danger); border-color:rgba(255,107,107,0.3)">🗑 Delete</button>
         <button class="applicant-action-btn" onclick="newApplicant()" title="New applicant">＋ New</button>
       </div>
     </div>
@@ -1399,6 +1570,17 @@
       <button class="save-btn" id="saveBtn" onclick="saveApplicant()" title="Save applicant data">
         💾 Save
       </button>
+      <div class="user-menu" id="userMenu">
+        <button class="user-btn" onclick="toggleUserMenu()">
+          <span class="user-icon">👤</span>
+          <span id="userDisplayName">—</span>
+          <span id="userRoleBadge" class="user-role-badge"></span>
+        </button>
+        <div class="user-dropdown" id="userDropdown" style="display:none">
+          <div class="user-dropdown-item" id="manageUsersItem" onclick="openUserManagement()" style="display:none">👥 Manage Users</div>
+          <div class="user-dropdown-item" onclick="doLogout()">🚪 Sign Out</div>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -1456,6 +1638,76 @@
       <p>Upload telephone recordings, PDFs, Word docs, or any documents containing customer information. Claude will automatically extract and map the data to the required onboarding fields.</p>
     </div>
   </main>
+</div>
+
+<!-- Sumsub Verification Modal -->
+<div class="audit-overlay" id="sumsubOverlay" onclick="closeSumsubModal(event)">
+  <div class="audit-modal" style="width:520px">
+    <div class="audit-header">
+      <div>
+        <div class="audit-title" id="sumsubModalTitle">🔍 Send for Verification</div>
+        <div class="audit-subtitle" id="sumsubModalSubtitle">Verify identity via Sumsub</div>
+      </div>
+      <button class="audit-close" onclick="document.getElementById('sumsubOverlay').classList.remove('show')">✕</button>
+    </div>
+    <div class="audit-body" id="sumsubModalBody" style="padding:20px 24px"></div>
+  </div>
+</div>
+
+<!-- User Management Modal -->
+<div class="audit-overlay" id="userMgmtOverlay" onclick="closeUserMgmt(event)">
+  <div class="audit-modal" style="width:600px">
+    <div class="audit-header">
+      <div>
+        <div class="audit-title">👥 User Management</div>
+        <div class="audit-subtitle">Manage who can access this portal</div>
+      </div>
+      <button class="audit-close" onclick="document.getElementById('userMgmtOverlay').classList.remove('show')">✕</button>
+    </div>
+    <div class="audit-body" style="padding:20px 24px">
+      <div id="userList" style="margin-bottom:24px"></div>
+      <div style="border-top:1px solid var(--border); padding-top:20px">
+        <div style="font-size:12px; font-weight:600; color:var(--text); margin-bottom:12px">Add New User</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr auto auto; gap:8px; align-items:end">
+          <div>
+            <div style="font-size:10px; color:var(--text-dimmer); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.08em">Username</div>
+            <input type="text" id="newUsername" class="field-edit-input" placeholder="username" style="width:100%">
+          </div>
+          <div>
+            <div style="font-size:10px; color:var(--text-dimmer); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.08em">Password</div>
+            <input type="password" id="newPassword" class="field-edit-input" placeholder="password" style="width:100%">
+          </div>
+          <div>
+            <div style="font-size:10px; color:var(--text-dimmer); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.08em">Role</div>
+            <select id="newRole" class="field-edit-select" style="width:100%">
+              <option value="reviewer">Reviewer</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <button class="field-edit-save" style="height:36px; padding:0 16px" onclick="addUser()">Add</button>
+        </div>
+        <div id="userMgmtError" style="display:none; color:var(--danger); font-size:11px; margin-top:8px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Audit Trail Modal -->
+<div class="audit-overlay" id="auditOverlay" onclick="closeAudit(event)">
+  <div class="audit-modal">
+    <div class="audit-header">
+      <div>
+        <div class="audit-title">📋 Audit Trail</div>
+        <div class="audit-subtitle" id="auditSubtitle">Loading…</div>
+      </div>
+      <button class="audit-close" onclick="closeAuditModal()">✕</button>
+    </div>
+    <div class="audit-tabs">
+      <button class="audit-tab active" id="tabChanges" onclick="switchAuditTab('changes')">Field Changes</button>
+      <button class="audit-tab" id="tabAccess" onclick="switchAuditTab('access')">Access Log</button>
+    </div>
+    <div class="audit-body" id="auditBody">Loading…</div>
+  </div>
 </div>
 
 <!-- Progress overlay -->
@@ -1638,6 +1890,125 @@ const SCHEMA = {
         { "id": "ibanNumber", "title": "EU IBAN number", "type": "text", "required": false },
         { "id": "destinationbaverification", "title": "Bank account verification document (file)", "type": "fileAttachment", "required": false }
       ]
+    },
+    {
+      "id": "kybCompany",
+      "title": "KYB — Company Verification",
+      "kyb": true,
+      "fields": [
+        { "id": "kyb_legalName",         "title": "Full legal company name",               "type": "text",           "required": true },
+        { "id": "kyb_tradingName",       "title": "Trading / DBA name (if different)",      "type": "text",           "required": false },
+        { "id": "kyb_regNumber",         "title": "Company registration number",            "type": "text",           "required": true },
+        { "id": "kyb_regCountry",        "title": "Country of incorporation",               "type": "countrySelect",  "required": true },
+        { "id": "kyb_regDate",           "title": "Date of incorporation",                  "type": "dateTime",       "required": false },
+        { "id": "kyb_legalForm",         "title": "Legal form / entity type",               "type": "select",         "required": true,
+          "options": ["Private Limited Company", "Public Limited Company", "LLC", "Partnership", "Sole Proprietorship", "Non-profit / NGO", "Trust", "Other"] },
+        { "id": "kyb_regAddress",        "title": "Registered address (street, city, postcode)", "type": "textArea", "required": true },
+        { "id": "kyb_operatingAddress",  "title": "Operating address (if different)",       "type": "textArea",       "required": false },
+        { "id": "kyb_companyEmail",      "title": "Company email address",                  "type": "text",           "required": false },
+        { "id": "kyb_companyPhone",      "title": "Company phone number",                   "type": "text",           "required": false },
+        { "id": "kyb_website",           "title": "Company website",                        "type": "text",           "required": false },
+        { "id": "kyb_vatNumber",         "title": "VAT / Tax ID number",                    "type": "text",           "required": false },
+        { "id": "kyb_licenseNumber",     "title": "Business licence number (if applicable)","type": "text",           "required": false },
+        { "id": "kyb_stockExchange",     "title": "Listed on stock exchange?",              "type": "select",         "required": false, "options": ["Yes", "No"] },
+        { "id": "kyb_stockExchangeName", "title": "Stock exchange name and ticker",         "type": "text",           "required": false },
+        { "id": "kyb_noUBOs",            "title": "Unable to provide UBO information?",     "type": "select",         "required": false, "options": ["No — UBOs will be provided", "Yes — regulated listed entity", "Yes — complex structure, explain below"] },
+        { "id": "kyb_noUBOReason",       "title": "Reason UBO information cannot be provided", "type": "textArea",   "required": false },
+        { "id": "kyb_certIncorporation", "title": "Certificate of Incorporation (file)",    "type": "fileAttachment", "required": true },
+        { "id": "kyb_memorandum",        "title": "Memorandum & Articles of Association (file)", "type": "fileAttachment", "required": false },
+        { "id": "kyb_regExtract",        "title": "Company registry extract (file)",        "type": "fileAttachment", "required": false },
+        { "id": "kyb_ownershipChart",    "title": "Ownership / corporate structure chart (file)", "type": "fileAttachment", "required": false },
+        { "id": "kyb_financialStatements","title": "Latest financial statements (file)",    "type": "fileAttachment", "required": false }
+      ]
+    },
+    {
+      "id": "kybUBO",
+      "title": "KYB — Ultimate Beneficial Owner (UBO)",
+      "kyb": true,
+      "fields": [
+        { "id": "kyb_ubo_sameAsDirector","title": "UBO is the same person as the Director/CEO?", "type": "select", "required": false, "options": ["Yes", "No"] },
+        { "id": "kyb_ubo_firstName",     "title": "UBO first name",                         "type": "text",           "required": true },
+        { "id": "kyb_ubo_middleName",    "title": "UBO middle name",                        "type": "text",           "required": false },
+        { "id": "kyb_ubo_lastName",      "title": "UBO last name",                          "type": "text",           "required": true },
+        { "id": "kyb_ubo_dob",           "title": "UBO date of birth",                      "type": "dateTime",       "required": true },
+        { "id": "kyb_ubo_nationality",   "title": "UBO nationality",                        "type": "countrySelect",  "required": true },
+        { "id": "kyb_ubo_countryOfResidence", "title": "UBO country of residence",          "type": "countrySelect",  "required": true },
+        { "id": "kyb_ubo_address",       "title": "UBO residential address",                "type": "textArea",       "required": true },
+        { "id": "kyb_ubo_email",         "title": "UBO email address",                      "type": "text",           "required": true },
+        { "id": "kyb_ubo_phone",         "title": "UBO phone number",                       "type": "text",           "required": false },
+        { "id": "kyb_ubo_idType",        "title": "UBO identity document type",             "type": "select",         "required": true,
+          "options": ["Passport", "National ID Card", "Driver's Licence", "Residence Permit"] },
+        { "id": "kyb_ubo_idNumber",      "title": "UBO identity document number",           "type": "text",           "required": true },
+        { "id": "kyb_ubo_idExpiry",      "title": "UBO identity document expiry date",      "type": "dateTime",       "required": false },
+        { "id": "kyb_ubo_idIssuingCountry", "title": "UBO document issuing country",        "type": "countrySelect",  "required": false },
+        { "id": "kyb_ubo_ownershipPct",  "title": "UBO ownership percentage (%)",           "type": "text",           "required": true },
+        { "id": "kyb_ubo_ownershipType", "title": "UBO ownership type",                     "type": "select",         "required": false,
+          "options": ["Direct", "Indirect", "Both direct and indirect"] },
+        { "id": "kyb_ubo_controlType",   "title": "Nature of control / voting rights",      "type": "multiSelect",    "required": false,
+          "options": ["Share ownership", "Voting rights", "Right to appoint directors", "Significant influence", "Other"] },
+        { "id": "kyb_ubo_pep",           "title": "Is the UBO a Politically Exposed Person?", "type": "select",      "required": true,
+          "options": ["No", "Yes", "Close associate of a PEP"] },
+        { "id": "kyb_ubo_pepDetails",    "title": "UBO PEP details (if applicable)",        "type": "textArea",       "required": false },
+        { "id": "kyb_ubo_idDoc",         "title": "UBO passport / ID document (file)",      "type": "fileAttachment", "required": true },
+        { "id": "kyb_ubo_proofAddress",  "title": "UBO proof of address — utility bill / bank statement max 3 months old (file)", "type": "fileAttachment", "required": true },
+        { "id": "kyb_ubo_selfie",        "title": "UBO selfie with ID (file)",              "type": "fileAttachment", "required": false }
+      ]
+    },
+    {
+      "id": "kybDirector",
+      "title": "KYB — Director / CEO",
+      "kyb": true,
+      "fields": [
+        { "id": "kyb_dir_sameAsUBO",     "title": "Director/CEO is the same person as the UBO?", "type": "select", "required": false, "options": ["Yes", "No"] },
+        { "id": "kyb_dir_firstName",     "title": "Director first name",                    "type": "text",           "required": true },
+        { "id": "kyb_dir_middleName",    "title": "Director middle name",                   "type": "text",           "required": false },
+        { "id": "kyb_dir_lastName",      "title": "Director last name",                     "type": "text",           "required": true },
+        { "id": "kyb_dir_title",         "title": "Director title / position",              "type": "select",         "required": false,
+          "options": ["CEO", "Managing Director", "Executive Director", "Director", "COO", "CFO", "President", "Other"] },
+        { "id": "kyb_dir_dob",           "title": "Director date of birth",                 "type": "dateTime",       "required": false },
+        { "id": "kyb_dir_nationality",   "title": "Director nationality",                   "type": "countrySelect",  "required": false },
+        { "id": "kyb_dir_countryOfResidence", "title": "Director country of residence",     "type": "countrySelect",  "required": false },
+        { "id": "kyb_dir_address",       "title": "Director residential address",           "type": "textArea",       "required": false },
+        { "id": "kyb_dir_email",         "title": "Director email address",                 "type": "text",           "required": true },
+        { "id": "kyb_dir_phone",         "title": "Director phone number",                  "type": "text",           "required": false },
+        { "id": "kyb_dir_idType",        "title": "Director identity document type",        "type": "select",         "required": false,
+          "options": ["Passport", "National ID Card", "Driver's Licence", "Residence Permit"] },
+        { "id": "kyb_dir_idNumber",      "title": "Director identity document number",      "type": "text",           "required": false },
+        { "id": "kyb_dir_idExpiry",      "title": "Director document expiry date",          "type": "dateTime",       "required": false },
+        { "id": "kyb_dir_idIssuingCountry", "title": "Director document issuing country",   "type": "countrySelect",  "required": false },
+        { "id": "kyb_dir_pep",           "title": "Is the Director a Politically Exposed Person?", "type": "select", "required": false,
+          "options": ["No", "Yes", "Close associate of a PEP"] },
+        { "id": "kyb_dir_appointmentDate", "title": "Director appointment date",            "type": "dateTime",       "required": false },
+        { "id": "kyb_dir_idDoc",         "title": "Director passport / ID document (file)", "type": "fileAttachment", "required": false },
+        { "id": "kyb_dir_proofAddress",  "title": "Director proof of address (file)",       "type": "fileAttachment", "required": false }
+      ]
+    },
+    {
+      "id": "kybRepresentative",
+      "title": "KYB — Authorised Representative",
+      "kyb": true,
+      "fields": [
+        { "id": "kyb_rep_sameAsUBO",     "title": "Representative is the same person as the UBO?", "type": "select", "required": false, "options": ["Yes", "No"] },
+        { "id": "kyb_rep_sameAsDirector","title": "Representative is the same person as the Director?", "type": "select", "required": false, "options": ["Yes", "No"] },
+        { "id": "kyb_rep_firstName",     "title": "Representative first name",              "type": "text",           "required": true },
+        { "id": "kyb_rep_middleName",    "title": "Representative middle name",             "type": "text",           "required": false },
+        { "id": "kyb_rep_lastName",      "title": "Representative last name",               "type": "text",           "required": true },
+        { "id": "kyb_rep_title",         "title": "Representative title / position",        "type": "text",           "required": false },
+        { "id": "kyb_rep_dob",           "title": "Representative date of birth",           "type": "dateTime",       "required": false },
+        { "id": "kyb_rep_nationality",   "title": "Representative nationality",             "type": "countrySelect",  "required": false },
+        { "id": "kyb_rep_email",         "title": "Representative email address",           "type": "text",           "required": true },
+        { "id": "kyb_rep_phone",         "title": "Representative phone number",            "type": "text",           "required": false },
+        { "id": "kyb_rep_idType",        "title": "Representative identity document type",  "type": "select",         "required": false,
+          "options": ["Passport", "National ID Card", "Driver's Licence", "Residence Permit"] },
+        { "id": "kyb_rep_idNumber",      "title": "Representative identity document number","type": "text",           "required": false },
+        { "id": "kyb_rep_idExpiry",      "title": "Representative document expiry date",    "type": "dateTime",       "required": false },
+        { "id": "kyb_rep_idIssuingCountry", "title": "Representative document issuing country", "type": "countrySelect", "required": false },
+        { "id": "kyb_rep_authBasis",     "title": "Basis of authority",                     "type": "select",         "required": true,
+          "options": ["Director / officer of company", "Power of attorney", "Board resolution", "Signatory authority"] },
+        { "id": "kyb_rep_authDoc",       "title": "Authority document (POA / board resolution) (file)", "type": "fileAttachment", "required": false },
+        { "id": "kyb_rep_idDoc",         "title": "Representative passport / ID document (file)", "type": "fileAttachment", "required": false },
+        { "id": "kyb_rep_proofAddress",  "title": "Representative proof of address (file)", "type": "fileAttachment", "required": false }
+      ]
     }
   ]
 };
@@ -1651,7 +2022,137 @@ let currentApplicantName = null;
 let unsavedChanges = false;
 
 // ===== INIT =====
+// ===== AUTH & USER MANAGEMENT =====
+let currentUser = null;
+
+async function initAuth() {
+  try {
+    const res  = await fetch('/api/auth/me');
+    if (!res.ok) { window.location.href = '/login'; return; }
+    currentUser = await res.json();
+    document.getElementById('userDisplayName').textContent = currentUser.username;
+    const badge = document.getElementById('userRoleBadge');
+    badge.textContent = currentUser.role;
+    badge.className = 'user-role-badge' + (currentUser.role === 'reviewer' ? ' reviewer' : '');
+    // Show manage users only for admins
+    if (currentUser.role === 'admin') {
+      document.getElementById('manageUsersItem').style.display = 'block';
+    }
+    // Hide edit/delete controls for reviewers
+    if (currentUser.role === 'reviewer') {
+      document.querySelectorAll('[onclick*="deleteApplicant"], [onclick*="startEdit"], [onclick*="saveEdit"]').forEach(el => {
+        el.style.display = 'none';
+      });
+    }
+  } catch(e) {
+    window.location.href = '/login';
+  }
+}
+
+function toggleUserMenu() {
+  const dd = document.getElementById('userDropdown');
+  dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.user-menu')) {
+    const dd = document.getElementById('userDropdown');
+    if (dd) dd.style.display = 'none';
+  }
+});
+
+async function doLogout() {
+  await fetch('/api/auth/logout', { method: 'POST' });
+  window.location.href = '/login';
+}
+
+async function openUserManagement() {
+  document.getElementById('userDropdown').style.display = 'none';
+  document.getElementById('userMgmtOverlay').classList.add('show');
+  await loadUsers();
+}
+
+function closeUserMgmt(e) {
+  if (e.target === document.getElementById('userMgmtOverlay')) {
+    document.getElementById('userMgmtOverlay').classList.remove('show');
+  }
+}
+
+async function loadUsers() {
+  try {
+    const res   = await fetch('/api/users');
+    const users = await res.json();
+    const list  = document.getElementById('userList');
+    list.innerHTML = `
+      <div class="user-row" style="font-size:10px; color:var(--text-dimmer); text-transform:uppercase; letter-spacing:0.08em">
+        <span>Username</span><span>Role</span><span>Status</span><span style="text-align:right">Actions</span>
+      </div>
+      ${users.map(u => `
+        <div class="user-row" id="urow-${u.id}">
+          <span class="user-row-name">
+            ${escHtml(u.username)}
+            ${u.id === currentUser?.id ? '<span style="font-size:9px;color:var(--accent);margin-left:6px">(you)</span>' : ''}
+            <div style="font-size:10px;color:var(--text-dimmer)">${u.last_login ? 'Last: ' + new Date(u.last_login).toLocaleDateString() : 'Never logged in'}</div>
+          </span>
+          <span class="user-row-role">
+            <span class="user-role-badge ${u.role === 'reviewer' ? 'reviewer' : ''}">${u.role}</span>
+          </span>
+          <span class="user-row-status" style="color:${u.active ? 'var(--accent)' : 'var(--danger)'}">
+            ${u.active ? '● Active' : '○ Inactive'}
+          </span>
+          <div class="user-row-actions">
+            ${u.id !== currentUser?.id ? `
+              <button class="field-edit-save" style="font-size:10px;padding:3px 8px;background:var(--surface2);color:var(--text-dim);border:1px solid var(--border2)"
+                onclick="toggleUserActive(${u.id}, ${!u.active})">${u.active ? 'Deactivate' : 'Activate'}</button>
+              <button class="field-edit-cancel" style="font-size:10px;padding:3px 8px;color:var(--danger);border-color:rgba(255,107,107,0.3)"
+                onclick="removeUser(${u.id}, '${escHtml(u.username)}')">Delete</button>
+            ` : ''}
+          </div>
+        </div>`).join('')}`;
+  } catch(e) {
+    document.getElementById('userList').innerHTML = `<div style="color:var(--danger);font-size:12px">Failed to load users: ${e.message}</div>`;
+  }
+}
+
+async function addUser() {
+  const username = document.getElementById('newUsername').value.trim();
+  const password = document.getElementById('newPassword').value;
+  const role     = document.getElementById('newRole').value;
+  const errEl    = document.getElementById('userMgmtError');
+
+  if (!username || !password) { errEl.textContent = 'Username and password are required'; errEl.style.display = 'block'; return; }
+  if (password.length < 8) { errEl.textContent = 'Password must be at least 8 characters'; errEl.style.display = 'block'; return; }
+
+  try {
+    const res  = await fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password, role })
+    });
+    const data = await res.json();
+    if (data.error) { errEl.textContent = data.error; errEl.style.display = 'block'; return; }
+    errEl.style.display = 'none';
+    document.getElementById('newUsername').value = '';
+    document.getElementById('newPassword').value = '';
+    await loadUsers();
+  } catch(e) {
+    errEl.textContent = e.message; errEl.style.display = 'block';
+  }
+}
+
+async function toggleUserActive(id, active) {
+  await fetch(`/api/users/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ active }) });
+  await loadUsers();
+}
+
+async function removeUser(id, username) {
+  if (!confirm(`Delete user "${username}"? This cannot be undone.`)) return;
+  await fetch(`/api/users/${id}`, { method: 'DELETE' });
+  await loadUsers();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  initAuth();
   setupUpload();
   renderNav();
 });
@@ -1698,6 +2199,114 @@ function markSaved() {
   setTimeout(() => { if (btn) btn.classList.remove('saved'); }, 2000);
 }
 
+// Session-based auth — cookies are sent automatically
+function getHeaders() {
+  return { 'Content-Type': 'application/json' };
+}
+
+async function deleteApplicant() {
+  if (!currentApplicantId) return;
+  const confirmed = confirm(
+    `⚠ GDPR Right to Erasure\n\nPermanently delete all data for "${currentApplicantName}"?\n\nThis cannot be undone. All field data, audit logs, and access records will be permanently removed.`
+  );
+  if (!confirmed) return;
+
+  try {
+    const res = await fetch(`/api/applicants/${currentApplicantId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    alert(`✓ "${currentApplicantName}" has been permanently deleted.`);
+    newApplicant();
+  } catch(e) {
+    alert('Delete failed: ' + e.message);
+  }
+}
+
+// ── Audit Trail ───────────────────────────────────────────────
+let auditData = null;
+let auditTab  = 'changes';
+
+async function viewAuditTrail() {
+  if (!currentApplicantId) return;
+  document.getElementById('auditOverlay').classList.add('show');
+  document.getElementById('auditSubtitle').textContent = currentApplicantName;
+  document.getElementById('auditBody').innerHTML = '<div class="audit-empty">Loading…</div>';
+
+  try {
+    const res  = await fetch(`/api/applicants/${currentApplicantId}/audit`, { headers: getHeaders() });
+    auditData  = await res.json();
+    renderAuditTab(auditTab);
+  } catch(e) {
+    document.getElementById('auditBody').innerHTML = `<div class="audit-empty">Failed to load audit trail: ${e.message}</div>`;
+  }
+}
+
+function switchAuditTab(tab) {
+  auditTab = tab;
+  document.getElementById('tabChanges').className = 'audit-tab' + (tab === 'changes' ? ' active' : '');
+  document.getElementById('tabAccess').className  = 'audit-tab' + (tab === 'access'  ? ' active' : '');
+  renderAuditTab(tab);
+}
+
+function renderAuditTab(tab) {
+  const body = document.getElementById('auditBody');
+  if (!auditData) return;
+
+  if (tab === 'changes') {
+    const rows = auditData.audit || [];
+    if (!rows.length) {
+      body.innerHTML = '<div class="audit-empty">No field changes recorded yet</div>';
+      return;
+    }
+    // Build a field label lookup from schema
+    const fieldLabels = {};
+    SCHEMA.sections.forEach(s => s.fields.forEach(f => { fieldLabels[f.id] = f.title; }));
+
+    body.innerHTML = `
+      <div class="audit-row" style="font-weight:600; color:var(--text-dim); font-size:10px; letter-spacing:0.08em; text-transform:uppercase">
+        <span>Field</span><span>Previous Value</span><span>New Value</span><span style="text-align:right">When</span>
+      </div>
+      ${rows.map(r => `
+        <div class="audit-row">
+          <span class="audit-field">${escHtml(fieldLabels[r.field_id] || r.field_id)}</span>
+          <span class="audit-old">${r.old_value ? escHtml(r.old_value) : '<em style="color:var(--text-dimmer)">—</em>'}</span>
+          <span class="audit-new">${r.new_value ? escHtml(r.new_value) : '<em style="color:var(--text-dimmer)">deleted</em>'}</span>
+          <span class="audit-time">${new Date(r.created_at).toLocaleString()}</span>
+        </div>`).join('')}`;
+  } else {
+    const rows = auditData.access || [];
+    if (!rows.length) {
+      body.innerHTML = '<div class="audit-empty">No access log entries yet</div>';
+      return;
+    }
+    const actionColors = {
+      'VIEW': 'var(--text-dim)', 'CREATE': 'var(--accent)', 'UPDATE': '#60a5fa',
+      'DELETE': 'var(--danger)', 'DELETION_REQUESTED': 'var(--warn)', 'VIEW_AUDIT': 'var(--text-dimmer)'
+    };
+    body.innerHTML = `
+      <div class="audit-access-row" style="font-weight:600; color:var(--text-dim); font-size:10px; letter-spacing:0.08em; text-transform:uppercase">
+        <span>Action</span><span>IP / User Agent</span><span style="text-align:right">When</span>
+      </div>
+      ${rows.map(r => `
+        <div class="audit-access-row">
+          <span style="color:${actionColors[r.action] || 'var(--text)'}; font-weight:600">${r.action}</span>
+          <span style="color:var(--text-dim); font-size:10px">${escHtml(r.ip || '—')} · ${escHtml((r.user_agent || '').slice(0, 60))}</span>
+          <span style="color:var(--text-dimmer); font-size:10px; text-align:right">${new Date(r.created_at).toLocaleString()}</span>
+        </div>`).join('')}`;
+  }
+}
+
+function closeAuditModal() {
+  document.getElementById('auditOverlay').classList.remove('show');
+}
+
+function closeAudit(e) {
+  if (e.target === document.getElementById('auditOverlay')) closeAuditModal();
+}
+
 async function saveApplicant() {
   // Determine name from extracted data or prompt
   let name = extractedData['companyNameInEnglish']?.value || currentApplicantName;
@@ -1713,13 +2322,13 @@ async function saveApplicant() {
     if (currentApplicantId) {
       res = await fetch(`/api/applicants/${currentApplicantId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         body: JSON.stringify(payload)
       });
     } else {
       res = await fetch('/api/applicants', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         body: JSON.stringify(payload)
       });
     }
@@ -1766,7 +2375,7 @@ function newApplicant() {
 
 async function loadApplicant(id) {
   try {
-    const res  = await fetch(`/api/applicants/${id}`);
+    const res  = await fetch(`/api/applicants/${id}`, { headers: getHeaders() });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
 
@@ -1776,9 +2385,18 @@ async function loadApplicant(id) {
     unsavedChanges       = false;
 
     showApplicantCurrent(data.name);
-    document.getElementById('applicantDropdown').style.display = 'none';
 
-    // Re-render dashboard with loaded data
+    // Show retention warning if flagged
+    if (data.flagged_for_deletion) {
+      setTimeout(() => {
+        const nameEl = document.getElementById('applicantCurrentName');
+        if (nameEl && !document.querySelector('.retention-flag')) {
+          nameEl.insertAdjacentHTML('afterend', `<span class="retention-flag">⚠ Deletion requested</span>`);
+        }
+      }, 100);
+    }
+
+    document.getElementById('applicantDropdown').style.display = 'none';
     renderDashboard();
     markSaved();
   } catch(e) {
@@ -1809,7 +2427,7 @@ document.addEventListener('DOMContentLoaded', () => {
 async function searchApplicants(q) {
   const dropdown = document.getElementById('applicantDropdown');
   try {
-    const res  = await fetch(`/api/applicants/search?q=${encodeURIComponent(q)}`);
+    const res  = await fetch(`/api/applicants/search?q=${encodeURIComponent(q)}`, { headers: getHeaders() });
     const rows = await res.json();
     if (!rows.length && !q) {
       dropdown.innerHTML = `<div class="applicant-dropdown-empty">No saved applicants yet</div>
@@ -1820,7 +2438,10 @@ async function searchApplicants(q) {
     } else {
       dropdown.innerHTML = rows.map(r => `
         <div class="applicant-dropdown-item" onclick="loadApplicant(${r.id})">
-          <span class="applicant-dropdown-item-name">${escHtml(r.name)}</span>
+          <span class="applicant-dropdown-item-name">
+            ${escHtml(r.name)}
+            ${r.flagged_for_deletion ? '<span class="retention-flag" style="font-size:9px;padding:1px 5px">⚠ Deletion</span>' : ''}
+          </span>
           <span class="applicant-dropdown-item-date">${new Date(r.updated_at).toLocaleDateString()}</span>
         </div>`).join('') +
         `<div class="applicant-dropdown-new" onclick="saveApplicant()">＋ Save current as new applicant</div>`;
@@ -2098,7 +2719,7 @@ FIELDS:\n${fieldSummary}\n\n---\n\nDOCUMENTS TO EXTRACT FROM:`
 
     const response = await fetch('/api/analyze', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(),
       body: JSON.stringify({ contentParts, fieldSummary, systemPrompt })
     });
 
@@ -2565,37 +3186,147 @@ function renderDashboard() {
   activeSections.forEach(section => {
     const sectionFields = section.fields.filter(f => isFieldVisible(f));
     if (sectionFields.length === 0) return;
-    const filledCount = sectionFields.filter(f => extractedData[f.id]).length;
+
+    // Handle "same person as" auto-population for KYB sections
+    if (section.kyb) {
+      // If Director is same as UBO, copy UBO fields to Director
+      if (section.id === 'kybDirector' && extractedData['kyb_dir_sameAsUBO']?.value === 'Yes') {
+        const uboToDir = { kyb_ubo_firstName:'kyb_dir_firstName', kyb_ubo_middleName:'kyb_dir_middleName',
+          kyb_ubo_lastName:'kyb_dir_lastName', kyb_ubo_dob:'kyb_dir_dob', kyb_ubo_nationality:'kyb_dir_nationality',
+          kyb_ubo_email:'kyb_dir_email', kyb_ubo_phone:'kyb_dir_phone', kyb_ubo_idType:'kyb_dir_idType',
+          kyb_ubo_idNumber:'kyb_dir_idNumber', kyb_ubo_idExpiry:'kyb_dir_idExpiry',
+          kyb_ubo_countryOfResidence:'kyb_dir_countryOfResidence', kyb_ubo_address:'kyb_dir_address' };
+        Object.entries(uboToDir).forEach(([from, to]) => {
+          if (extractedData[from] && !extractedData[to]) extractedData[to] = { ...extractedData[from], manual: true };
+        });
+      }
+      // If Representative is same as UBO
+      if (section.id === 'kybRepresentative' && extractedData['kyb_rep_sameAsUBO']?.value === 'Yes') {
+        const uboToRep = { kyb_ubo_firstName:'kyb_rep_firstName', kyb_ubo_middleName:'kyb_rep_middleName',
+          kyb_ubo_lastName:'kyb_rep_lastName', kyb_ubo_dob:'kyb_rep_dob', kyb_ubo_nationality:'kyb_rep_nationality',
+          kyb_ubo_email:'kyb_rep_email', kyb_ubo_phone:'kyb_rep_phone', kyb_ubo_idType:'kyb_rep_idType',
+          kyb_ubo_idNumber:'kyb_rep_idNumber', kyb_ubo_idExpiry:'kyb_rep_idExpiry' };
+        Object.entries(uboToRep).forEach(([from, to]) => {
+          if (extractedData[from] && !extractedData[to]) extractedData[to] = { ...extractedData[from], manual: true };
+        });
+      }
+      // If Representative is same as Director
+      if (section.id === 'kybRepresentative' && extractedData['kyb_rep_sameAsDirector']?.value === 'Yes') {
+        const dirToRep = { kyb_dir_firstName:'kyb_rep_firstName', kyb_dir_middleName:'kyb_rep_middleName',
+          kyb_dir_lastName:'kyb_rep_lastName', kyb_dir_dob:'kyb_rep_dob', kyb_dir_nationality:'kyb_rep_nationality',
+          kyb_dir_email:'kyb_rep_email', kyb_dir_phone:'kyb_rep_phone', kyb_dir_idType:'kyb_rep_idType',
+          kyb_dir_idNumber:'kyb_rep_idNumber', kyb_dir_idExpiry:'kyb_rep_idExpiry' };
+        Object.entries(dirToRep).forEach(([from, to]) => {
+          if (extractedData[from] && !extractedData[to]) extractedData[to] = { ...extractedData[from], manual: true };
+        });
+      }
+    }
+
+    const filledCount   = sectionFields.filter(f => extractedData[f.id]).length;
     const requiredCount = sectionFields.filter(f => f.required).length;
     const filledRequired = sectionFields.filter(f => f.required && extractedData[f.id]).length;
-    
+
     let tagClass = 'missing', tagText = `0/${requiredCount} required`;
     if (filledRequired === requiredCount && requiredCount > 0) { tagClass = 'complete'; tagText = 'Required complete'; }
     else if (filledCount > 0) { tagClass = 'partial'; tagText = `${filledRequired}/${requiredCount} required`; }
     else if (requiredCount === 0) { tagClass = 'complete'; tagText = 'Optional'; }
 
-    html += `<div class="section-block" id="section-${section.id}">
-      <div class="section-heading">
-        <h2>${section.title}</h2>
-        <span class="section-tag ${tagClass}">${tagText}</span>
-      </div>
-      <table class="field-table">
-        <thead>
-          <tr>
+    // KYB sections are collapsible — collapsed by default unless they have data
+    if (section.kyb) {
+      const isExpanded = filledCount > 0;
+      const kybIcons = { kybCompany: '🏢', kybUBO: '👤', kybDirector: '👔', kybRepresentative: '🤝' };
+      const icon = kybIcons[section.id] || '📋';
+
+      // Verification status badge for person sections
+      const personTypeMap = { kybUBO: 'ubo', kybDirector: 'dir', kybRepresentative: 'rep' };
+      const personType    = personTypeMap[section.id];
+      let verifyBadge = '';
+      let verifyBtn   = '';
+
+      if (personType) {
+        const statusVal  = extractedData[`kyb_${personType}_verificationStatus`]?.value || '';
+        const sumsubId   = extractedData[`kyb_${personType}_sumsubId`]?.value || '';
+        const statusConfig = {
+          verified:    { label: '✓ Verified',     color: 'var(--accent)',  bg: 'var(--complete-dim)' },
+          rejected:    { label: '✕ Rejected',     color: 'var(--danger)',  bg: 'var(--danger-dim)' },
+          link_sent:   { label: '⏳ Link Sent',    color: '#fbbf24',        bg: 'rgba(251,191,36,0.1)' },
+          pending:     { label: '⏳ Pending',      color: '#fbbf24',        bg: 'rgba(251,191,36,0.1)' },
+          error:       { label: '⚠ Error',         color: 'var(--danger)',  bg: 'var(--danger-dim)' },
+        };
+        const sc = statusConfig[statusVal];
+        if (sc) {
+          verifyBadge = `<span style="font-size:10px;padding:3px 10px;border-radius:20px;background:${sc.bg};color:${sc.color};border:1px solid ${sc.color}30">${sc.label}</span>`;
+        }
+        // Show verify button for admins/reviewers, and refresh button if already sent
+        if (statusVal === 'verified') {
+          verifyBtn = verifyBadge; // just the badge, no button needed
+          verifyBadge = '';
+        } else if (statusVal === 'link_sent' || statusVal === 'pending') {
+          verifyBtn = `${verifyBadge}
+            <button class="kyb-verify-btn refresh" onclick="checkSumsubStatus('${personType}', '${sumsubId}', ${currentApplicantId || 'null'})" title="Check current status">🔄 Refresh</button>`;
+          verifyBadge = '';
+        } else {
+          verifyBtn = `<button class="kyb-verify-btn" onclick="sendForVerification('${personType}', ${currentApplicantId || 'null'})" title="Send verification link via Sumsub">🔍 Verify via Sumsub</button>`;
+        }
+      }
+
+      html += `<div class="section-block kyb-section" id="section-${section.id}">
+        <div class="kyb-section-header" onclick="toggleKybSection('${section.id}')">
+          <div class="kyb-section-left">
+            <span class="kyb-icon">${icon}</span>
+            <div>
+              <div class="kyb-section-title">${section.title}</div>
+              <div class="kyb-section-sub">${filledCount} of ${sectionFields.length} fields collected</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px" onclick="event.stopPropagation()">
+            ${verifyBtn}
+            <span class="section-tag ${tagClass}" onclick="toggleKybSection('${section.id}')">${tagText}</span>
+            <span class="kyb-chevron" id="kyb-chevron-${section.id}" onclick="toggleKybSection('${section.id}')">${isExpanded ? '▲' : '▼'}</span>
+          </div>
+        </div>
+        <div class="kyb-section-body" id="kyb-body-${section.id}" style="display:${isExpanded ? 'block' : 'none'}">
+          <table class="field-table">
+            <thead><tr>
+              <th style="width:35%">Field</th>
+              <th style="width:45%">Value</th>
+              <th style="width:20%">Status</th>
+            </tr></thead>
+            <tbody>${sectionFields.map(field => renderFieldRow(field)).join('')}</tbody>
+          </table>
+        </div>
+      </div>`;
+    } else {
+      html += `<div class="section-block" id="section-${section.id}">
+        <div class="section-heading">
+          <h2>${section.title}</h2>
+          <span class="section-tag ${tagClass}">${tagText}</span>
+        </div>
+        <table class="field-table">
+          <thead><tr>
             <th style="width:35%">Field</th>
             <th style="width:45%">Value</th>
             <th style="width:20%">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${sectionFields.map(field => renderFieldRow(field)).join('')}
-        </tbody>
-      </table>
-    </div>`;
+          </tr></thead>
+          <tbody>${sectionFields.map(field => renderFieldRow(field)).join('')}</tbody>
+        </table>
+      </div>`;
+    }
   });
 
   main.innerHTML = html;
   renderNav();
+
+  // Hide admin-only controls for reviewers
+  if (currentUser?.role === 'reviewer') {
+    document.querySelectorAll('.edit-field-btn, [onclick*="deleteApplicant"], [onclick*="saveEdit"], [onclick*="saveEditMulti"]').forEach(el => {
+      el.style.display = 'none';
+    });
+    const deleteBtn = document.querySelector('[onclick="deleteApplicant()"]');
+    if (deleteBtn) deleteBtn.style.display = 'none';
+    const auditBtn = document.querySelector('[onclick="viewAuditTrail()"]');
+    if (auditBtn) auditBtn.style.display = 'none';
+  }
 }
 
 function renderFieldRow(field) {
@@ -2790,6 +3521,164 @@ function saveEdit(fieldId) {
   updateProgress();
 }
 
+// ===== SUMSUB VERIFICATION =====
+const PERSON_LABELS = { ubo: 'UBO', dir: 'Director / CEO', rep: 'Representative' };
+const PERSON_FIELDS = {
+  ubo: { first: 'kyb_ubo_firstName', last: 'kyb_ubo_lastName', email: 'kyb_ubo_email', phone: 'kyb_ubo_phone', dob: 'kyb_ubo_dob' },
+  dir: { first: 'kyb_dir_firstName', last: 'kyb_dir_lastName', email: 'kyb_dir_email', phone: 'kyb_dir_phone', dob: 'kyb_dir_dob' },
+  rep: { first: 'kyb_rep_firstName', last: 'kyb_rep_lastName', email: 'kyb_rep_email', phone: 'kyb_rep_phone', dob: 'kyb_rep_dob' }
+};
+
+function sendForVerification(personType, applicantId) {
+  const fields   = PERSON_FIELDS[personType];
+  const label    = PERSON_LABELS[personType];
+  const firstName = extractedData[fields.first]?.value || '';
+  const lastName  = extractedData[fields.last]?.value  || '';
+  const email     = extractedData[fields.email]?.value || '';
+  const phone     = extractedData[fields.phone]?.value || '';
+  const dob       = extractedData[fields.dob]?.value   || '';
+
+  const body = document.getElementById('sumsubModalBody');
+  document.getElementById('sumsubModalTitle').textContent = `🔍 Verify ${label}`;
+  document.getElementById('sumsubModalSubtitle').textContent = 'Generate a Sumsub verification link to send to the individual';
+
+  body.innerHTML = `
+    <div style="margin-bottom:16px;font-size:12px;color:var(--text-dim)">
+      Sumsub will email a verification link to the individual. They'll be asked to upload their ID and a selfie.
+    </div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:10px;color:var(--text-dimmer);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Verification Level</div>
+      <select id="ss-level" class="field-edit-select" style="width:100%">
+        <option value="">— Select verification level —</option>
+        <option value="level-israel">Israel</option>
+        <option value="level-us">US</option>
+        <option value="level-eu">EU</option>
+      </select>
+      <div style="font-size:10px;color:var(--text-dimmer);margin-top:4px">Choose the level matching the individual's jurisdiction</div>
+    </div>
+    <div style="display:grid;gap:10px;margin-bottom:20px">
+      ${inputRow('First Name', 'ss-first', firstName)}
+      ${inputRow('Last Name',  'ss-last',  lastName)}
+      ${inputRow('Email',      'ss-email', email, 'email')}
+      ${inputRow('Phone',      'ss-phone', phone)}
+      ${inputRow('Date of Birth (YYYY-MM-DD)', 'ss-dob', dob)}
+    </div>
+    <div id="sumsubResult" style="display:none;margin-bottom:16px"></div>
+    <div style="display:flex;gap:10px">
+      <button class="field-edit-save" style="flex:1" onclick="submitSumsubVerification('${personType}', ${applicantId || 'null'})">
+        Send Verification Link
+      </button>
+      <button class="field-edit-cancel" onclick="document.getElementById('sumsubOverlay').classList.remove('show')">Cancel</button>
+    </div>`;
+
+  document.getElementById('sumsubOverlay').classList.add('show');
+}
+
+function inputRow(label, id, value, type = 'text') {
+  return `<div>
+    <div style="font-size:10px;color:var(--text-dimmer);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">${label}</div>
+    <input type="${type}" id="${id}" class="field-edit-input" value="${escHtml(value)}" placeholder="${label}" style="width:100%">
+  </div>`;
+}
+
+async function submitSumsubVerification(personType, applicantId) {
+  const levelName = document.getElementById('ss-level')?.value;
+  const firstName = document.getElementById('ss-first')?.value.trim();
+  const lastName  = document.getElementById('ss-last')?.value.trim();
+  const email     = document.getElementById('ss-email')?.value.trim();
+  const phone     = document.getElementById('ss-phone')?.value.trim();
+  const dob       = document.getElementById('ss-dob')?.value.trim();
+  const result    = document.getElementById('sumsubResult');
+
+  if (!levelName) {
+    result.style.display = 'block';
+    result.innerHTML = `<div style="color:var(--danger);font-size:12px;padding:8px 12px;background:var(--danger-dim);border-radius:6px">Please select a verification level.</div>`;
+    return;
+  }
+  if (!firstName || !lastName || !email) {
+    result.style.display = 'block';
+    result.innerHTML = `<div style="color:var(--danger);font-size:12px;padding:8px 12px;background:var(--danger-dim);border-radius:6px">First name, last name and email are required.</div>`;
+    return;
+  }
+
+  const btn = document.querySelector('#sumsubModalBody .field-edit-save');
+  btn.disabled = true; btn.textContent = 'Sending…';
+  result.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/sumsub/create', {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ personType, firstName, lastName, email, phone, dob, applicantId, levelName,
+        externalId: `clearshift-${personType}-${applicantId}-${Date.now()}` })
+    });
+    const data = await res.json();
+
+    if (data.error) throw new Error(data.error);
+
+    // Store Sumsub ID in local extractedData
+    extractedData[`kyb_${personType}_sumsubId`]           = { value: data.sumsubApplicantId, confidence: 'high', manual: false, sources: ['sumsub'] };
+    extractedData[`kyb_${personType}_verificationStatus`] = { value: 'link_sent', confidence: 'high', manual: false, sources: ['sumsub'] };
+    markUnsaved();
+
+    result.style.display = 'block';
+    result.innerHTML = `
+      <div style="background:var(--complete-dim);border:1px solid var(--accent-dim);border-radius:8px;padding:14px">
+        <div style="color:var(--accent);font-size:13px;font-weight:600;margin-bottom:8px">✓ Verification link created</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px">Sumsub applicant ID: <code style="color:var(--text)">${data.sumsubApplicantId}</code></div>
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px">Share this link with ${firstName} ${lastName}:</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" value="${data.verificationUrl}" readonly
+            style="flex:1;background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-size:10px;padding:6px 10px;font-family:monospace">
+          <button class="field-edit-save" style="padding:6px 12px;font-size:11px" onclick="navigator.clipboard.writeText('${data.verificationUrl}').then(()=>this.textContent='Copied!').catch(()=>{})">Copy</button>
+        </div>
+      </div>`;
+
+    btn.textContent = 'Link Created ✓';
+    renderDashboard(); // refresh status badges
+
+  } catch(e) {
+    result.style.display = 'block';
+    result.innerHTML = `<div style="color:var(--danger);font-size:12px;padding:8px 12px;background:var(--danger-dim);border-radius:6px">⚠ ${e.message}</div>`;
+    btn.disabled = false; btn.textContent = 'Send Verification Link';
+  }
+}
+
+async function checkSumsubStatus(personType, sumsubId, applicantId) {
+  if (!sumsubId) return;
+  try {
+    const res  = await fetch(`/api/sumsub/status/${sumsubId}`, { headers: getHeaders() });
+    const data = await res.json();
+    if (data.error) { alert('Status check failed: ' + data.error); return; }
+
+    const statusMap = { GREEN: 'verified', RED: 'rejected', pending: 'pending' };
+    const newStatus = statusMap[data.reviewAnswer] || data.reviewStatus || 'pending';
+
+    extractedData[`kyb_${personType}_verificationStatus`] = { value: newStatus, confidence: 'high', manual: false, sources: ['sumsub'] };
+    markUnsaved();
+    renderDashboard();
+
+    const labels = { verified: '✓ Verified — GREEN', rejected: '✕ Rejected — RED', pending: '⏳ Still pending' };
+    alert(`Sumsub status: ${labels[newStatus] || newStatus}`);
+  } catch(e) {
+    alert('Status check error: ' + e.message);
+  }
+}
+
+function closeSumsubModal(e) {
+  if (e.target === document.getElementById('sumsubOverlay')) {
+    document.getElementById('sumsubOverlay').classList.remove('show');
+  }
+}
+
+function toggleKybSection(sectionId) {
+  const body    = document.getElementById(`kyb-body-${sectionId}`);
+  const chevron = document.getElementById(`kyb-chevron-${sectionId}`);
+  const isOpen  = body.style.display !== 'none';
+  body.style.display  = isOpen ? 'none' : 'block';
+  chevron.textContent = isOpen ? '▼' : '▲';
+}
+
 function renderNav() {
   const nav = document.getElementById('sectionNav');
   nav.innerHTML = '';
@@ -2804,26 +3693,50 @@ function renderNav() {
     return true;
   });
 
+  // Add a KYB divider label before the first KYB section
+  let kybHeaderAdded = false;
+
   navSections.forEach(section => {
     const sectionFields = section.fields;
-    const filledCount = sectionFields.filter(f => extractedData[f.id]).length;
-    const requiredCount = sectionFields.filter(f => f.required).length;
+    const filledCount    = sectionFields.filter(f => extractedData[f.id]).length;
+    const requiredCount  = sectionFields.filter(f => f.required).length;
     const filledRequired = sectionFields.filter(f => f.required && extractedData[f.id]).length;
 
     let dotClass = 'empty';
     if (requiredCount === 0 || (filledCount > 0 && filledRequired === requiredCount)) dotClass = 'complete';
     else if (filledCount > 0) dotClass = 'partial';
 
+    // Add KYB section header in nav
+    if (section.kyb && !kybHeaderAdded) {
+      const divider = document.createElement('div');
+      divider.className = 'sidebar-label';
+      divider.style.cssText = 'margin: 14px 10px 6px; font-size:9px; letter-spacing:0.12em; color:#60a5fa';
+      divider.textContent = 'KYB VERIFICATION';
+      nav.appendChild(divider);
+      kybHeaderAdded = true;
+    }
+
     const item = document.createElement('div');
-    item.className = 'nav-item';
+    item.className = 'nav-item' + (section.kyb ? ' kyb-nav' : '');
     item.innerHTML = `
-      <span class="nav-dot ${dotClass}"></span>
-      <span>${section.title}</span>
+      <span class="nav-dot ${dotClass}" style="${section.kyb && dotClass === 'complete' ? 'background:#60a5fa' : section.kyb && dotClass === 'partial' ? 'background:#93c5fd' : ''}"></span>
+      <span>${section.title.replace('KYB — ', '')}</span>
       <span class="nav-count">${filledCount}/${sectionFields.length}</span>
     `;
     item.addEventListener('click', () => {
       const el = document.getElementById('section-' + section.id);
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Auto-expand KYB section on nav click
+        if (section.kyb) {
+          const body = document.getElementById(`kyb-body-${section.id}`);
+          const chevron = document.getElementById(`kyb-chevron-${section.id}`);
+          if (body && body.style.display === 'none') {
+            body.style.display = 'block';
+            if (chevron) chevron.textContent = '▲';
+          }
+        }
+      }
     });
     nav.appendChild(item);
   });
