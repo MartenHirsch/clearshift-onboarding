@@ -710,9 +710,10 @@ app.post('/api/analyze', async (req, res) => {
       'has explicitly and directly stated Yes, No, or Uncertain. ' +
       'Do NOT infer "No" from silence. If not directly answered, omit it entirely.' +
       '\n\nKYB HEBREW REGISTRY: שם חברה=company name→kyb_legalName, מספר חברה=reg number→kyb_regNumber, ' +
-      'כתובת התאגיד=address→kyb_regAddress, בעלי מניות=shareholders/UBOs→kyb_ubo fields, ' +
+      'כתובת התאגיד=address→kyb_regAddress, ' +
+      'בעלי מניות=shareholders: if shareholder name contains בע"מ/Ltd/LLC/Inc it is a COMPANY not a person → set kyb_ubo_hasCorporateShareholder="Yes — one or more corporate shareholders exist" and kyb_ubo_corporateShareholderName=company name; individual shareholders→kyb_ubo fields, ' +
       'דירקטורים=directors→kyb_dir fields, transliterate Hebrew names to English. ' +
-      'If multiple directors/UBOs, extract the primary one.' +
+      'If multiple directors/UBOs, extract the primary individual one.' +
       'FIELD_ID="companyNameInEnglish" QUESTION="Name of the Business"\n' +
       'Document contains: "שם חברה: גרניטה - מקבוצת שאהין בע\'\'מ"\n' +
       'CORRECT: {"companyNameInEnglish": {"value": "Granita - Shahin Group Ltd", "confidence": "high"}}\n' +

@@ -1321,6 +1321,44 @@
   .kyb-verify-btn.refresh { background: rgba(251,191,36,0.1); border-color: rgba(251,191,36,0.3); color: #fbbf24; }
   .kyb-verify-btn.refresh:hover { background: rgba(251,191,36,0.2); }
 
+  /* Corporate shareholder compliance warning */
+  .corporate-shareholder-warning {
+    display: flex;
+    gap: 14px;
+    background: rgba(251,191,36,0.08);
+    border: 1px solid rgba(251,191,36,0.35);
+    border-left: 4px solid #fbbf24;
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    margin: 12px 4px 4px;
+  }
+  .csw-icon { font-size: 22px; flex-shrink: 0; padding-top: 2px; }
+  .csw-body { flex: 1; }
+  .csw-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fbbf24;
+    margin-bottom: 6px;
+  }
+  .csw-text {
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    margin-bottom: 10px;
+  }
+  .csw-text strong { color: var(--text); }
+  .csw-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .csw-badge {
+    font-size: 9px;
+    padding: 2px 8px;
+    border-radius: 8px;
+    background: rgba(251,191,36,0.12);
+    color: #fbbf24;
+    border: 1px solid rgba(251,191,36,0.3);
+    letter-spacing: 0.04em;
+  }
+
   /* ===== PROGRESS OVERLAY ===== */
   .progress-overlay {
     display: none;
@@ -1926,6 +1964,12 @@ const SCHEMA = {
       "title": "KYB — Ultimate Beneficial Owner (UBO)",
       "kyb": true,
       "fields": [
+        { "id": "kyb_ubo_hasCorporateShareholder", "title": "Does the company have a corporate shareholder (company as owner)?", "type": "select", "required": true,
+          "options": ["No — all shareholders are individuals", "Yes — one or more corporate shareholders exist"] },
+        { "id": "kyb_ubo_corporateShareholderName", "title": "Corporate shareholder name(s)", "type": "textArea", "required": false },
+        { "id": "kyb_ubo_corporateShareholderPct",  "title": "Corporate shareholder ownership %", "type": "text", "required": false },
+        { "id": "kyb_ubo_corporateShareholderCountry", "title": "Corporate shareholder country of incorporation", "type": "countrySelect", "required": false },
+        { "id": "kyb_ubo_corporateRegistryDoc", "title": "Corporate shareholder registry extract (file)", "type": "fileAttachment", "required": false },
         { "id": "kyb_ubo_sameAsDirector","title": "UBO is the same person as the Director/CEO?", "type": "select", "required": false, "options": ["Yes", "No"] },
         { "id": "kyb_ubo_firstName",     "title": "UBO first name",                         "type": "text",           "required": true },
         { "id": "kyb_ubo_middleName",    "title": "UBO middle name",                        "type": "text",           "required": false },
@@ -2674,7 +2718,8 @@ KYB EXTRACTION GUIDANCE — Israeli/Hebrew Registry Documents:
 - "כתובת התאגיד" = registered address → extract to kyb_regAddress
 - "תאריך רישום" = registration date → extract to kyb_regDate
 - "סוג חברה" = company type (ישראלית=Israeli private) → extract to kyb_legalForm
-- "בעלי מניות" section = shareholders/UBOs → extract names to kyb_ubo_firstName + kyb_ubo_lastName
+- "בעלי מניות" section = shareholders/UBOs → if shareholder is a COMPANY (has "בע\"מ", "Ltd", "LLC", "Inc" in name), extract to kyb_ubo_hasCorporateShareholder="Yes — one or more corporate shareholders exist" and kyb_ubo_corporateShareholderName; if all shareholders are individuals, set kyb_ubo_hasCorporateShareholder="No — all shareholders are individuals"
+- Individual shareholders → extract names to kyb_ubo_firstName + kyb_ubo_lastName
 - "דירקטורים" section = directors → extract names to kyb_dir_firstName + kyb_dir_lastName
 - "בעלי תפקידים" section = officers (מנכ"ל=CEO, סמנכ"ל=VP) → extract to kyb_dir_title
 - "מחזיק ב: X מניות" = ownership percentage (divide by total shares × 100) → extract to kyb_ubo_ownershipPct
@@ -3284,6 +3329,31 @@ function renderDashboard() {
         }
       }
 
+      // Corporate shareholder compliance warning
+      let corporateWarning = '';
+      if (section.id === 'kybUBO') {
+        const corpVal = extractedData['kyb_ubo_hasCorporateShareholder']?.value || '';
+        const corpName = extractedData['kyb_ubo_corporateShareholderName']?.value || '';
+        if (corpVal.includes('Yes')) {
+          corporateWarning = `<div class="corporate-shareholder-warning">
+            <div class="csw-icon">⚠️</div>
+            <div class="csw-body">
+              <div class="csw-title">Compliance Review Required — Corporate Shareholder Detected</div>
+              <div class="csw-text">
+                ${corpName ? `<strong>${escHtml(corpName)}</strong> is listed as a corporate shareholder. ` : 'A corporate shareholder has been identified. '}
+                A company cannot be a UBO — you must identify the natural persons who ultimately own or control this corporate shareholder
+                (typically anyone with 25%+ ownership). Obtain and verify the registry extract for the corporate shareholder
+                and add its beneficial owners as additional UBOs.
+              </div>
+              <div class="csw-actions">
+                <span class="csw-badge">🔒 AML/KYB Requirement</span>
+                <span class="csw-badge">FATF Recommendation 24</span>
+              </div>
+            </div>
+          </div>`;
+        }
+      }
+
       html += `<div class="section-block kyb-section" id="section-${section.id}">
         <div class="kyb-section-header" onclick="toggleKybSection('${section.id}')">
           <div class="kyb-section-left">
@@ -3294,12 +3364,16 @@ function renderDashboard() {
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:10px" onclick="event.stopPropagation()">
+            ${section.id === 'kybUBO' && extractedData['kyb_ubo_hasCorporateShareholder']?.value?.includes('Yes')
+              ? `<span style="font-size:10px;padding:3px 10px;border-radius:20px;background:rgba(251,191,36,0.15);color:#fbbf24;border:1px solid rgba(251,191,36,0.4)">⚠ Corporate Shareholder</span>`
+              : ''}
             ${verifyBtn}
             <span class="section-tag ${tagClass}" onclick="toggleKybSection('${section.id}')">${tagText}</span>
             <span class="kyb-chevron" id="kyb-chevron-${section.id}" onclick="toggleKybSection('${section.id}')">${isExpanded ? '▲' : '▼'}</span>
           </div>
         </div>
         <div class="kyb-section-body" id="kyb-body-${section.id}" style="display:${isExpanded ? 'block' : 'none'}">
+          ${corporateWarning}
           <table class="field-table">
             <thead><tr>
               <th style="width:35%">Field</th>
