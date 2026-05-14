@@ -2668,11 +2668,25 @@ STRICT RULES — VIOLATIONS ARE SERIOUS:
 - If nothing is found, return {"extracted":{},"summary":"No extractable onboarding data found"}
 - When in doubt, leave it out
 
+KYB EXTRACTION GUIDANCE — Israeli/Hebrew Registry Documents:
+- "שם חברה" or "שם החברה" = company name → extract to kyb_legalName
+- "מספר חברה" or "מס' חברה" = company registration number → extract to kyb_regNumber
+- "כתובת התאגיד" = registered address → extract to kyb_regAddress
+- "תאריך רישום" = registration date → extract to kyb_regDate
+- "סוג חברה" = company type (ישראלית=Israeli private) → extract to kyb_legalForm
+- "בעלי מניות" section = shareholders/UBOs → extract names to kyb_ubo_firstName + kyb_ubo_lastName
+- "דירקטורים" section = directors → extract names to kyb_dir_firstName + kyb_dir_lastName
+- "בעלי תפקידים" section = officers (מנכ"ל=CEO, סמנכ"ל=VP) → extract to kyb_dir_title
+- "מחזיק ב: X מניות" = ownership percentage (divide by total shares × 100) → extract to kyb_ubo_ownershipPct
+- Hebrew names: write in English transliteration (e.g. "ירון מנחם" → "Yaron Menachem")
+- If multiple directors/UBOs exist, extract the FIRST/PRIMARY one to the kyb fields
+- "אזרח ישראלי" = Israeli citizen → nationality field value: "Israel"
+- "אזרח זר" = foreign citizen → nationality unknown unless specified
+
 PEP RULE — CRITICAL COMPLIANCE REQUIREMENT:
-- The field "areYouAPep" (Is any owner/manager/UBO a PEP?) must NEVER be filled unless the client has EXPLICITLY and DIRECTLY stated "Yes", "No", or "Uncertain" in their own words
-- Do NOT infer "No" from silence, absence of mention, or any indirect statement
-- Do NOT fill this field based on context or assumption
-- If the PEP question has not been directly answered in the document, leave "areYouAPep" out entirely`;
+- The field "areYouAPep" must NEVER be filled unless explicitly stated
+- Do NOT infer "No" from silence or absence of mention
+- If not directly answered, leave "areYouAPep" out entirely`;
 
   const fieldSummary = SCHEMA.sections.map(s =>
     `[${s.title}]\n` + s.fields.map(f =>

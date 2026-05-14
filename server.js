@@ -709,7 +709,10 @@ app.post('/api/analyze', async (req, res) => {
       '\n\nPEP COMPLIANCE: The field "areYouAPep" must NEVER be filled unless the client ' +
       'has explicitly and directly stated Yes, No, or Uncertain. ' +
       'Do NOT infer "No" from silence. If not directly answered, omit it entirely.' +
-      '\n\nCRITICAL EXAMPLE of correct extraction:\n' +
+      '\n\nKYB HEBREW REGISTRY: שם חברה=company name→kyb_legalName, מספר חברה=reg number→kyb_regNumber, ' +
+      'כתובת התאגיד=address→kyb_regAddress, בעלי מניות=shareholders/UBOs→kyb_ubo fields, ' +
+      'דירקטורים=directors→kyb_dir fields, transliterate Hebrew names to English. ' +
+      'If multiple directors/UBOs, extract the primary one.' +
       'FIELD_ID="companyNameInEnglish" QUESTION="Name of the Business"\n' +
       'Document contains: "שם חברה: גרניטה - מקבוצת שאהין בע\'\'מ"\n' +
       'CORRECT: {"companyNameInEnglish": {"value": "Granita - Shahin Group Ltd", "confidence": "high"}}\n' +
