@@ -769,7 +769,20 @@ app.post('/api/analyze', async (req, res) => {
       'Document contains: "שם חברה: גרניטה - מקבוצת שאהין בע\'\'מ"\n' +
       'CORRECT: {"companyNameInEnglish": {"value": "Granita - Shahin Group Ltd", "confidence": "high"}}\n' +
       'WRONG:   {"companyNameInEnglish": {"value": "Name of the Business", "confidence": "high"}}\n' +
-      'The value is ALWAYS real data from the document, NEVER the question/field label text.';
+      'The value is ALWAYS real data from the document, NEVER the question/field label text.' +
+      '\n\nKYB LITHUANIAN/BALTIC REGISTRY EXTRACTION RULES (Registrų Centras):\n' +
+      '- CRITICAL: Any entry prefixed with "X" is a HISTORICAL/CANCELLED record. IGNORE all X-prefixed entries — do NOT extract directors, shareholders, addresses, or names from them.\n' +
+      '- Only extract data from entries with NO "X" prefix and NO end date (pabaigos data).\n' +
+      '- "Pavadinimas" = current company name → kyb_legalName. X-prefixed name line below it = former name → kyb_formerName\n' +
+      '- "Kodas" = registration number → kyb_regNumber\n' +
+      '- "Teisinė forma: Uždaroji akcinė bendrovė" = Private Limited Company → kyb_legalForm\n' +
+      '- "Buveinės adresas" (no X) = registered address → kyb_regAddress\n' +
+      '- "Įregistravimo data" = date of incorporation → kyb_regDate\n' +
+      '- "Elektroninio pašto adresas" (no X) = company email → kyb_companyEmail\n' +
+      '- "Mobilusis telefonas" (no X) = company phone → kyb_companyPhone\n' +
+      '- Section "5. Organai / Vadovas": extract ONLY person with NO X prefix and no end date as current director\n' +
+      '- Section "6. Dalyviai / Akcininkas": extract ONLY shareholders with NO X prefix. If ALL shareholder entries have X prefixes, leave ALL shareholder fields blank\n' +
+      '- "įrašų nėra" = no records on file (bankruptcy, restrictions, licensed activity)\n';
 
     // Build the user message — Claude handles large context natively, no chunking needed
     const userText = contentParts
