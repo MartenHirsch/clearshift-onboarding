@@ -594,7 +594,56 @@ app.get('/api/sumsub/status/:sumsubApplicantId', requireRole('admin', 'reviewer'
   }
 });
 
-// ── /api/sumsub/webhook ───────────────────────────────────────
+// ── /api/sumsub/fetch-data/:sumsubId ─────────────────────────
+// Fetches verified applicant data back from Sumsub after GREEN result
+app.get('/api/sumsub/fetch-data/:sumsubId', requireRole('admin', 'reviewer'), async (req, res) => {
+  if (!SUMSUB_APP_TOKEN || !SUMSUB_SECRET_KEY) {
+    return res.status(500).json({ error: 'Sumsub credentials not configured' });
+  }
+  try {
+    const data = await sumsubRequest('GET', `/resources/applicants/${req.params.sumsubId}/one`);
+
+    // Extract the most useful fields from info (document-extracted) and fixedInfo (provided)
+    const info      = data.info      || {};
+    const fixed     = data.fixedInfo || {};
+    const idDoc     = info.idDocs?.[0] || {};
+
+    // Map document type
+    const idTypeMap = {
+      PASSPORT:         'Passport',
+      ID_CARD:          'National ID Card',
+      DRIVERS:          "Driver's Licence",
+      RESIDENCE_PERMIT: 'Residence Permit'
+    };
+
+    const extracted = {
+      // Names: prefer document-extracted (info) over fixedInfo
+      firstName:        info.firstNameEn  || info.firstName  || fixed.firstNameEn  || fixed.firstName  || '',
+      middleName:       info.middleNameEn || info.middleName || fixed.middleNameEn || fixed.middleName || '',
+      lastName:         info.lastNameEn   || info.lastName   || fixed.lastNameEn   || fixed.lastName   || '',
+      dob:              info.dob          || fixed.dob        || '',
+      nationality:      info.country      || fixed.nationality || fixed.country     || '',
+      // ID document details from the verified doc
+      idType:           idTypeMap[idDoc.idDocType] || idDoc.idDocType || '',
+      idNumber:         idDoc.number      || '',
+      idExpiry:         idDoc.validUntil  || '',
+      idIssuingCountry: idDoc.country     || '',
+      // Address if available
+      address:          fixed.addresses?.[0]
+        ? [fixed.addresses[0].street, fixed.addresses[0].town, fixed.addresses[0].postCode, fixed.addresses[0].country]
+            .filter(Boolean).join(', ')
+        : ''
+    };
+
+    console.log(`Fetched Sumsub data for ${req.params.sumsubId}: ${extracted.firstName} ${extracted.lastName}`);
+    res.json({ extracted, raw: { info, fixedInfo: fixed } });
+  } catch(e) {
+    console.error('Sumsub fetch error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+
 // Receives Sumsub webhook events and updates applicant status
 app.post('/api/sumsub/webhook', express.json(), async (req, res) => {
   try {

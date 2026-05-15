@@ -3913,10 +3913,40 @@ function renderPersonCard(person, idx, listKey, template, label) {
   const name = [person.firstName, person.lastName].filter(Boolean).join(' ') || `${label} ${idx + 1}`;
   const status = person.verificationStatus || '';
   const sc = STATUS_COLORS[status];
+  const sumsubBadge = person._sumsubDataPulled
+    ? `<span style="font-size:9px;padding:2px 7px;border-radius:8px;background:rgba(91,255,160,0.1);color:var(--accent);border:1px solid rgba(91,255,160,0.25);margin-left:6px">✓ Sumsub verified data</span>`
+    : '';
+
+  // Mismatch banner
+  const mismatches = person._sumsubMismatches || [];
+  const mismatchBanner = mismatches.length > 0 ? `
+    <div style="background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.3);border-left:4px solid var(--danger);border-radius:var(--radius);padding:12px 14px;margin:8px 4px 0">
+      <div style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--danger);margin-bottom:8px">⚠ Data Mismatch — Sumsub vs On File</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px">The following fields differ between what was collected and what Sumsub extracted from the verified ID document. Review and accept the correct value.</div>
+      ${mismatches.map((m, mi) => `
+        <div style="background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:10px 12px;margin-bottom:6px">
+          <div style="font-size:10px;font-weight:600;color:var(--text);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">${escHtml(m.label)}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <div>
+              <div style="font-size:9px;color:var(--text-dimmer);margin-bottom:2px">ON FILE</div>
+              <div style="font-size:11px;color:var(--warn)">${escHtml(m.existing)}</div>
+            </div>
+            <div>
+              <div style="font-size:9px;color:var(--text-dimmer);margin-bottom:2px">SUMSUB (from ID document)</div>
+              <div style="font-size:11px;color:var(--accent)">${escHtml(m.sumsub)}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="field-edit-save" style="font-size:10px;padding:3px 10px" onclick="acceptSumsubValue('${listKey}', ${idx}, ${mi})">✓ Use Sumsub value</button>
+            <button class="field-edit-cancel" style="font-size:10px;padding:3px 10px" onclick="keepExistingValue('${listKey}', ${idx}, ${mi})">Keep on-file value</button>
+          </div>
+        </div>`).join('')}
+    </div>` : '';
 
   const verifyBtnHtml = sc
     ? (status === 'verified'
-        ? `<span style="font-size:10px;padding:3px 10px;border-radius:20px;background:${sc.bg};color:${sc.color};border:1px solid ${sc.color}40">${sc.label}</span>`
+        ? `<span style="font-size:10px;padding:3px 10px;border-radius:20px;background:${sc.bg};color:${sc.color};border:1px solid ${sc.color}40">${sc.label}</span>
+           <button class="kyb-verify-btn" onclick="pullSumsubData('${listKey}', ${idx}, '${person.sumsubId || ''}')" style="font-size:10px;padding:4px 10px;background:rgba(91,255,160,0.1);border-color:rgba(91,255,160,0.3);color:var(--accent)" title="Pull verified data from Sumsub">⬇ Pull Data</button>`
         : `<span style="font-size:10px;padding:3px 10px;border-radius:20px;background:${sc.bg};color:${sc.color};border:1px solid ${sc.color}40">${sc.label}</span>
            <button class="kyb-verify-btn refresh" onclick="checkPersonStatus('${listKey}', ${idx})" style="font-size:10px;padding:4px 10px">🔄 Refresh</button>`)
     : `<button class="kyb-verify-btn" onclick="sendPersonForVerification('${listKey}', ${idx})" style="font-size:10px;padding:4px 10px">🔍 Verify</button>`;
@@ -3944,7 +3974,7 @@ function renderPersonCard(person, idx, listKey, template, label) {
       <div style="display:flex;align-items:center;gap:10px">
         <span style="font-size:16px">${listKey === 'ubos' ? '👤' : listKey === 'directors' ? '👔' : '🤝'}</span>
         <div>
-          <div style="font-size:13px;font-weight:600;color:var(--text)">${escHtml(name)}</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text)">${escHtml(name)}${sumsubBadge}</div>
           <div style="font-size:10px;color:var(--text-dimmer)">${label} ${idx + 1}</div>
         </div>
       </div>
@@ -3954,6 +3984,7 @@ function renderPersonCard(person, idx, listKey, template, label) {
         <button class="field-edit-cancel" onclick="removePersonCard('${listKey}', ${idx})" style="font-size:11px;padding:4px 8px;color:var(--danger);border-color:rgba(255,107,107,0.3)">✕ Remove</button>
       </div>
     </div>
+    ${mismatchBanner}
     <table class="field-table" style="margin:0">
       <tbody>${rows}</tbody>
     </table>
@@ -4092,6 +4123,114 @@ async function submitPersonVerification(listKey, idx) {
   } catch(e) {
     result.style.display='block'; result.innerHTML=`<div style="color:var(--danger);font-size:12px;padding:8px 12px;background:var(--danger-dim);border-radius:6px">⚠ ${e.message}</div>`;
     btn.disabled=false; btn.textContent='Send Verification Link';
+  }
+}
+
+function acceptSumsubValue(listKey, idx, mismatchIdx) {
+  const person    = kybPersons[listKey][idx];
+  const mismatch  = person._sumsubMismatches[mismatchIdx];
+  if (!mismatch) return;
+
+  // Apply the Sumsub value
+  person[mismatch.field] = mismatch.sumsub;
+  // Mark this mismatch as resolved
+  mismatch.resolved = 'sumsub';
+  // Remove from active mismatches if all resolved
+  person._sumsubMismatches = person._sumsubMismatches.filter(m => !m.resolved);
+
+  saveKybPersons();
+  markUnsaved();
+  refreshPersonCards(listKey);
+}
+
+function keepExistingValue(listKey, idx, mismatchIdx) {
+  const person   = kybPersons[listKey][idx];
+  const mismatch = person._sumsubMismatches[mismatchIdx];
+  if (!mismatch) return;
+
+  // Keep existing value, just dismiss this mismatch
+  mismatch.resolved = 'kept';
+  person._sumsubMismatches = person._sumsubMismatches.filter(m => !m.resolved);
+
+  saveKybPersons();
+  markUnsaved();
+  refreshPersonCards(listKey);
+}
+
+async function pullSumsubData(listKey, idx, sumsubId) {
+  if (!sumsubId) { alert('No Sumsub ID found for this person.'); return; }
+
+  const btn = document.querySelector(`#person-card-${listKey}-${idx} [onclick*="pullSumsubData"]`);
+  if (btn) { btn.textContent = '⏳ Pulling…'; btn.disabled = true; }
+
+  try {
+    const res  = await fetch(`/api/sumsub/fetch-data/${sumsubId}`, { headers: getHeaders() });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    const e = data.extracted;
+    const person = kybPersons[listKey][idx];
+
+    // Field labels for mismatch reporting
+    const fieldLabels = {
+      firstName: 'First name', middleName: 'Middle name', lastName: 'Last name',
+      dob: 'Date of birth', nationality: 'Nationality',
+      idType: 'ID document type', idNumber: 'ID document number',
+      idExpiry: 'ID expiry date', idIssuingCountry: 'Issuing country', address: 'Address'
+    };
+
+    const mismatches = [];
+    const newFields  = [];
+    const fieldsToMerge = Object.keys(fieldLabels);
+
+    for (const field of fieldsToMerge) {
+      if (!e[field]) continue; // Sumsub didn't return this field
+
+      const existing = (person[field] || '').toString().trim().toLowerCase();
+      const incoming = e[field].toString().trim().toLowerCase();
+
+      if (!existing) {
+        // Field was empty — just fill it in
+        person[field] = e[field];
+        newFields.push(fieldLabels[field]);
+      } else if (existing !== incoming) {
+        // MISMATCH — record it but don't overwrite
+        mismatches.push({
+          field,
+          label:    fieldLabels[field],
+          existing: person[field],
+          sumsub:   e[field]
+        });
+      }
+      // If they match exactly — do nothing
+    }
+
+    // Store mismatches and pulled data on the person record
+    person._sumsubDataPulled  = true;
+    person._sumsubDataDate    = new Date().toISOString();
+    person._sumsubMismatches  = mismatches;
+
+    saveKybPersons();
+    markUnsaved();
+    refreshPersonCards(listKey);
+
+    // Show result summary
+    if (mismatches.length > 0) {
+      const mismatchLines = mismatches.map(m =>
+        `• ${m.label}:\n  On file: "${m.existing}"\n  Sumsub:  "${m.sumsub}"`
+      ).join('\n\n');
+      alert(`⚠ Data mismatch detected for ${person.firstName} ${person.lastName}\n\n${mismatchLines}\n\nThe on-file values have been kept. Review and correct manually if needed.`);
+    } else if (newFields.length > 0) {
+      const newBtn = document.querySelector(`#person-card-${listKey}-${idx} [onclick*="pullSumsubData"]`);
+      if (newBtn) newBtn.textContent = `✓ ${newFields.length} fields added`;
+    } else {
+      const newBtn = document.querySelector(`#person-card-${listKey}-${idx} [onclick*="pullSumsubData"]`);
+      if (newBtn) newBtn.textContent = '✓ All data matches';
+    }
+
+  } catch(e) {
+    if (btn) { btn.textContent = '⬇ Pull Data'; btn.disabled = false; }
+    alert('Failed to pull Sumsub data: ' + e.message);
   }
 }
 
