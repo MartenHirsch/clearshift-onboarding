@@ -2808,7 +2808,7 @@ FIELDS:\n${fieldSummary}\n\n---\n\nDOCUMENTS TO EXTRACT FROM:`
   }
 
   try {
-    setProgress(45, 'Waiting for Claude response…');
+    setProgress(45, 'Sending to Claude — this may take up to 30 seconds…');
 
     const response = await fetch('/api/analyze', {
       method: 'POST',
@@ -2822,6 +2822,9 @@ FIELDS:\n${fieldSummary}\n\n---\n\nDOCUMENTS TO EXTRACT FROM:`
     const data = await response.json();
 
     if (data.error) {
+      if (data.error.toLowerCase().includes('overload')) {
+        throw new Error('Claude API is busy — all retries failed. Please wait 1-2 minutes and try again.');
+      }
       throw new Error(data.error);
     }
 

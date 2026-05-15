@@ -729,21 +729,56 @@ app.post('/api/analyze', async (req, res) => {
 
     console.log(`Sending ${userText.length} chars to Claude Sonnet`);
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': anthropicKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 4000,
-        system: enhancedPrompt,
-        messages: [{ role: 'user', content: userText }]
-      })
-    });
+    // Retry up to 3 times with exponential backoff for overloaded errors
+    let response, lastError;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': anthropicKey,
+            'anthropic-version': '2023-06-01'
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-6',
+            max_tokens: 4000,
+            system: enhancedPrompt,
+            messages: [{ role: 'user', content: userText }]
+          })
+        });
 
+        // If overloaded, wait and retry
+        if (response.status === 529 || response.status === 503) {
+          const wait = attempt * 8000; // 8s, 16s, 24s
+          console.log(`Claude overloaded (attempt ${attempt}/3), retrying in ${wait/1000}s...`);
+          await new Promise(r => setTimeout(r, wait));
+          continue;
+        }
+
+        // Check response body for overloaded error even on 200
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          const msg = err.error?.message || `Claude error ${response.status}`;
+          if (msg.toLowerCase().includes('overload') && attempt < 3) {
+            console.log(`Claude overloaded in body (attempt ${attempt}/3), retrying...`);
+            await new Promise(r => setTimeout(r, attempt * 8000));
+            continue;
+          }
+          return res.status(response.status).json({ error: msg });
+        }
+
+        break; // success
+      } catch(e) {
+        lastError = e;
+        if (attempt < 3) {
+          console.log(`Claude request error (attempt ${attempt}/3): ${e.message}`);
+          await new Promise(r => setTimeout(r, attempt * 5000));
+        }
+      }
+    }
+
+    if (!response) throw lastError || new Error('All retry attempts failed');
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
       return res.status(response.status).json({ error: err.error?.message || `Claude error ${response.status}` });
