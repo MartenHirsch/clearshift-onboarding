@@ -2537,6 +2537,7 @@ function setupUpload() {
   // Documents
   const zone  = document.getElementById('uploadZone');
   const input = document.getElementById('fileInput');
+  if (!zone || !input) { console.error('Upload zone elements not found'); return; }
   input.addEventListener('change', e => addDocFiles(Array.from(e.target.files)));
   zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('dragover'); });
   zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
@@ -2548,6 +2549,7 @@ function setupUpload() {
   // Audio
   const audioZone  = document.getElementById('audioUploadZone');
   const audioInput = document.getElementById('audioFileInput');
+  if (!audioZone || !audioInput) { console.error('Audio zone elements not found'); return; }
   audioInput.addEventListener('change', e => addAudioFiles(Array.from(e.target.files)));
   audioZone.addEventListener('dragover',  e => { e.preventDefault(); audioZone.classList.add('dragover'); });
   audioZone.addEventListener('dragleave', () => audioZone.classList.remove('dragover'));
@@ -2556,7 +2558,8 @@ function setupUpload() {
     addAudioFiles(Array.from(e.dataTransfer.files));
   });
 
-  document.getElementById('analyzeBtn').addEventListener('click', analyzeFiles);
+  const analyzeBtn = document.getElementById('analyzeBtn');
+  if (analyzeBtn) analyzeBtn.addEventListener('click', analyzeFiles);
 }
 
 function addDocFiles(files) {
@@ -3350,39 +3353,6 @@ function renderDashboard() {
 
     const sectionFields = section.fields.filter(f => isFieldVisible(f));
     if (sectionFields.length === 0) return;
-
-    // Handle "same person as" auto-population for KYB sections (legacy single-entry — no longer used for person sections)
-    if (section.kyb) {
-        const uboToDir = { kyb_ubo_firstName:'kyb_dir_firstName', kyb_ubo_middleName:'kyb_dir_middleName',
-          kyb_ubo_lastName:'kyb_dir_lastName', kyb_ubo_dob:'kyb_dir_dob', kyb_ubo_nationality:'kyb_dir_nationality',
-          kyb_ubo_email:'kyb_dir_email', kyb_ubo_phone:'kyb_dir_phone', kyb_ubo_idType:'kyb_dir_idType',
-          kyb_ubo_idNumber:'kyb_dir_idNumber', kyb_ubo_idExpiry:'kyb_dir_idExpiry',
-          kyb_ubo_countryOfResidence:'kyb_dir_countryOfResidence', kyb_ubo_address:'kyb_dir_address' };
-        Object.entries(uboToDir).forEach(([from, to]) => {
-          if (extractedData[from] && !extractedData[to]) extractedData[to] = { ...extractedData[from], manual: true };
-        });
-      }
-      // If Representative is same as UBO
-      if (section.id === 'kybRepresentative' && extractedData['kyb_rep_sameAsUBO']?.value === 'Yes') {
-        const uboToRep = { kyb_ubo_firstName:'kyb_rep_firstName', kyb_ubo_middleName:'kyb_rep_middleName',
-          kyb_ubo_lastName:'kyb_rep_lastName', kyb_ubo_dob:'kyb_rep_dob', kyb_ubo_nationality:'kyb_rep_nationality',
-          kyb_ubo_email:'kyb_rep_email', kyb_ubo_phone:'kyb_rep_phone', kyb_ubo_idType:'kyb_rep_idType',
-          kyb_ubo_idNumber:'kyb_rep_idNumber', kyb_ubo_idExpiry:'kyb_rep_idExpiry' };
-        Object.entries(uboToRep).forEach(([from, to]) => {
-          if (extractedData[from] && !extractedData[to]) extractedData[to] = { ...extractedData[from], manual: true };
-        });
-      }
-      // If Representative is same as Director
-      if (section.id === 'kybRepresentative' && extractedData['kyb_rep_sameAsDirector']?.value === 'Yes') {
-        const dirToRep = { kyb_dir_firstName:'kyb_rep_firstName', kyb_dir_middleName:'kyb_rep_middleName',
-          kyb_dir_lastName:'kyb_rep_lastName', kyb_dir_dob:'kyb_rep_dob', kyb_dir_nationality:'kyb_rep_nationality',
-          kyb_dir_email:'kyb_rep_email', kyb_dir_phone:'kyb_rep_phone', kyb_dir_idType:'kyb_rep_idType',
-          kyb_dir_idNumber:'kyb_rep_idNumber', kyb_dir_idExpiry:'kyb_rep_idExpiry' };
-        Object.entries(dirToRep).forEach(([from, to]) => {
-          if (extractedData[from] && !extractedData[to]) extractedData[to] = { ...extractedData[from], manual: true };
-        });
-      }
-    }
 
     const filledCount   = sectionFields.filter(f => extractedData[f.id]).length;
     const requiredCount = sectionFields.filter(f => f.required).length;
