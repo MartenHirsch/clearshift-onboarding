@@ -2868,7 +2868,12 @@ FIELDS:\n${fieldSummary}\n\n---\n\nDOCUMENTS TO EXTRACT FROM:`
     renderDashboard();
 
     setStep('render', 'done');
-    setProgress(100, fieldsFound > 0 ? `Done — ${fieldsFound} fields extracted` : 'Done — no data found in documents');
+    const modelNote = data.usedModel && data.usedModel.includes('Haiku')
+      ? ` · ⚡ Used ${data.usedModel} (Sonnet was busy)`
+      : '';
+    setProgress(100, fieldsFound > 0
+      ? `Done — ${fieldsFound} fields extracted${modelNote}`
+      : `Done — no data found${modelNote}`);
     if (fieldsFound > 0) markUnsaved();
 
     // Auto-set applicant name from extracted business name if not yet set

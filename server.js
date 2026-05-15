@@ -729,59 +729,68 @@ app.post('/api/analyze', async (req, res) => {
 
     console.log(`Sending ${userText.length} chars to Claude Sonnet`);
 
-    // Retry up to 3 times with exponential backoff for overloaded errors
-    let response, lastError;
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        response = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': anthropicKey,
-            'anthropic-version': '2023-06-01'
-          },
-          body: JSON.stringify({
-            model: 'claude-sonnet-4-6',
-            max_tokens: 4000,
-            system: enhancedPrompt,
-            messages: [{ role: 'user', content: userText }]
-          })
-        });
+    // Try Sonnet first, fall back to Haiku if overloaded
+    const models = [
+      { id: 'claude-sonnet-4-6', label: 'Claude Sonnet' },
+      { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku (fallback)' }
+    ];
 
-        // If overloaded, wait and retry
-        if (response.status === 529 || response.status === 503) {
-          const wait = attempt * 8000; // 8s, 16s, 24s
-          console.log(`Claude overloaded (attempt ${attempt}/3), retrying in ${wait/1000}s...`);
-          await new Promise(r => setTimeout(r, wait));
-          continue;
-        }
+    let response, usedModel, lastError;
 
-        // Check response body for overloaded error even on 200
-        if (!response.ok) {
-          const err = await response.json().catch(() => ({}));
-          const msg = err.error?.message || `Claude error ${response.status}`;
-          if (msg.toLowerCase().includes('overload') && attempt < 3) {
-            console.log(`Claude overloaded in body (attempt ${attempt}/3), retrying...`);
-            await new Promise(r => setTimeout(r, attempt * 8000));
+    for (const model of models) {
+      let overloaded = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          console.log(`Trying ${model.label} (attempt ${attempt})...`);
+          response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': anthropicKey,
+              'anthropic-version': '2023-06-01'
+            },
+            body: JSON.stringify({
+              model: model.id,
+              max_tokens: 4000,
+              system: enhancedPrompt,
+              messages: [{ role: 'user', content: userText }]
+            })
+          });
+
+          if (response.status === 529 || response.status === 503) {
+            console.log(`${model.label} overloaded (attempt ${attempt}/2)`);
+            overloaded = true;
+            if (attempt < 2) await new Promise(r => setTimeout(r, 6000));
             continue;
           }
-          return res.status(response.status).json({ error: msg });
-        }
 
-        break; // success
-      } catch(e) {
-        lastError = e;
-        if (attempt < 3) {
-          console.log(`Claude request error (attempt ${attempt}/3): ${e.message}`);
-          await new Promise(r => setTimeout(r, attempt * 5000));
+          if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            const msg = err.error?.message || `API error ${response.status}`;
+            if ((msg.toLowerCase().includes('overload') || response.status === 529) && attempt < 2) {
+              overloaded = true;
+              await new Promise(r => setTimeout(r, 6000));
+              continue;
+            }
+            return res.status(response.status).json({ error: msg });
+          }
+
+          usedModel = model.label;
+          overloaded = false;
+          break;
+        } catch(e) {
+          lastError = e;
+          if (attempt < 2) await new Promise(r => setTimeout(r, 4000));
         }
       }
+
+      if (!overloaded && response?.ok) break; // success — stop trying models
+      if (!overloaded) break; // non-overload error — stop
+      response = null; // reset for next model
     }
 
-    if (!response) throw lastError || new Error('All retry attempts failed');
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      return res.status(response.status).json({ error: err.error?.message || `Claude error ${response.status}` });
+    if (!response || !response.ok) {
+      throw lastError || new Error('All models overloaded. Please try again in a few minutes.');
     }
 
     const data = await response.json();
@@ -791,10 +800,10 @@ app.post('/api/analyze', async (req, res) => {
 
     const parsed = parseJSON(text);
     if (parsed) {
-      console.log(`Extracted ${Object.keys(parsed.extracted || {}).length} fields`);
-      res.json(parsed);
+      console.log(`Extracted ${Object.keys(parsed.extracted || {}).length} fields using ${usedModel}`);
+      res.json({ ...parsed, usedModel });
     } else {
-      res.json({ extracted: {}, summary: 'No extractable data found' });
+      res.json({ extracted: {}, summary: 'No extractable data found', usedModel });
     }
 
   } catch (e) {
