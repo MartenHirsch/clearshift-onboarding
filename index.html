@@ -2789,10 +2789,12 @@ KYB EXTRACTION GUIDANCE — Israeli/Hebrew Registry Documents:
 KYB EXTRACTION GUIDANCE — Lithuanian / Baltic Registry Documents (Registrų Centras):
 - CRITICAL: Any entry prefixed with "X" is a HISTORICAL/CANCELLED record. IGNORE all X-prefixed entries entirely — do NOT extract directors, shareholders, addresses, or names from them.
 - Only extract data from entries that have NO "X" prefix and NO end date (pabaigos data).
-- "Pavadinimas" = current company name → kyb_legalName. If there is an X-prefixed former name line below it, extract that former name → kyb_formerName (e.g. "X UAB 'Pepės žaidimai', nuo ... iki ..." → former name is "UAB Pepės žaidimai")
+- "Pavadinimas" = current company name → extract to BOTH kyb_legalName AND companyNameInEnglish. If there is an X-prefixed former name line below it, extract that former name → kyb_formerName (e.g. "X UAB 'Pepės žaidimai', nuo ... iki ..." → former name is "UAB Pepės žaidimai")
 - "Kodas" = registration number → kyb_regNumber
-- "Teisinė forma: Uždaroji akcinė bendrovė" = Private Limited Company → kyb_legalForm
+- "Teisinė forma: Uždaroji akcinė bendrovė" = Private Limited Company → kyb_legalForm AND set whatTypeOfCompanyAre="For Profit Business (Corporation, LLC, etc.)"
+- "Veiklos tikslai ir rūšys" / "komercinė veikla" / "ūkinė-komercinė veikla" = commercial/business activity → set whatTypeOfCompanyAre="For Profit Business (Corporation, LLC, etc.)" if not already set
 - "Buveinės adresas" (current, no X prefix) = registered address → kyb_regAddress
+- A document issued by "Registrų Centras" or "LIETUVOS RESPUBLIKOS JURIDINIŲ ASMENŲ REGISTRO" is a Lithuanian registry → set kyb_regCountry="Lithuania"
 - "Įregistravimo data" = date of incorporation → kyb_regDate
 - "Elektroninio pašto adresas" (current, no X) = company email → kyb_companyEmail
 - "Mobilusis telefonas" (current, no X) = company phone → kyb_companyPhone
@@ -3743,6 +3745,13 @@ function saveEdit(fieldId) {
 
   cancelEdit(fieldId);
   markUnsaved();
+
+  // If business type changed, full re-render needed to show/hide conditional sections
+  if (fieldId === 'whatTypeOfCompanyAre') {
+    renderDashboard();
+    return;
+  }
+
   // Re-render just this row inline
   const field = SCHEMA.sections.flatMap(s => s.fields).find(f => f.id === fieldId);
   if (field) {

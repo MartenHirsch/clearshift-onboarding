@@ -773,10 +773,12 @@ app.post('/api/analyze', async (req, res) => {
       '\n\nKYB LITHUANIAN/BALTIC REGISTRY EXTRACTION RULES (Registrų Centras):\n' +
       '- CRITICAL: Any entry prefixed with "X" is a HISTORICAL/CANCELLED record. IGNORE all X-prefixed entries — do NOT extract directors, shareholders, addresses, or names from them.\n' +
       '- Only extract data from entries with NO "X" prefix and NO end date (pabaigos data).\n' +
-      '- "Pavadinimas" = current company name → kyb_legalName. X-prefixed name line below it = former name → kyb_formerName\n' +
+      '- "Pavadinimas" = current company name → extract to BOTH kyb_legalName AND companyNameInEnglish. X-prefixed name line below it = former name → kyb_formerName\n' +
       '- "Kodas" = registration number → kyb_regNumber\n' +
-      '- "Teisinė forma: Uždaroji akcinė bendrovė" = Private Limited Company → kyb_legalForm\n' +
+      '- "Teisinė forma: Uždaroji akcinė bendrovė" = Private Limited Company → kyb_legalForm AND set whatTypeOfCompanyAre="For Profit Business (Corporation, LLC, etc.)"\n' +
+      '- "Veiklos tikslai ir rūšys" / "komercinė veikla" / "ūkinė-komercinė veikla" = commercial/business activity → set whatTypeOfCompanyAre="For Profit Business (Corporation, LLC, etc.)" if not already set\n' +
       '- "Buveinės adresas" (no X) = registered address → kyb_regAddress\n' +
+      '- A document issued by "Registrų Centras" or "LIETUVOS RESPUBLIKOS JURIDINIŲ ASMENŲ REGISTRO" is a Lithuanian registry → set kyb_regCountry="Lithuania"\n' +
       '- "Įregistravimo data" = date of incorporation → kyb_regDate\n' +
       '- "Elektroninio pašto adresas" (no X) = company email → kyb_companyEmail\n' +
       '- "Mobilusis telefonas" (no X) = company phone → kyb_companyPhone\n' +
