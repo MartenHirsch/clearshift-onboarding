@@ -706,10 +706,15 @@ app.post('/api/analyze', async (req, res) => {
       '\n\nPEP COMPLIANCE: The field "areYouAPep" must NEVER be filled unless the client ' +
       'has explicitly and directly stated Yes, No, or Uncertain. ' +
       'Do NOT infer "No" from silence. If not directly answered, omit it entirely.' +
-      '\n\nKYB HEBREW REGISTRY: שם חברה=company name→kyb_legalName, מספר חברה=reg number→kyb_regNumber, ' +
-      'כתובת התאגיד=address→kyb_regAddress, תאריך רישום=reg date→kyb_regDate, ' +
-      'בעלי מניות: if shareholder name contains בע"מ/Ltd/LLC/Inc/company → set kyb_ubo_hasCorporateShareholder="Yes — one or more corporate shareholders exist" AND kyb_ubo_corporateShareholderName=that company name. Individual shareholders → list names in summary only. ' +
-      'דירקטורים/בעלי תפקידים → list ALL director/officer names in summary field only (transliterate Hebrew to English), do NOT use kyb_dir_ fields. ' +
+      '\n\nKYB HEBREW REGISTRY EXTRACTION RULES:\n' +
+      '- שם חברה / שם החברה = company name → extract to BOTH kyb_legalName AND companyNameInEnglish (use the English name "שם חברה באנגלית" if present, otherwise transliterate Hebrew)\n' +
+      '- מספר חברה / מס\' חברה = registration number → kyb_regNumber\n' +
+      '- כתובת התאגיד = registered address → kyb_regAddress\n' +
+      '- תאריך רישום = registration date → kyb_regDate\n' +
+      '- סוג חברה ישראלית + חברה פרטית = Private Limited Company → kyb_legalForm\n' +
+      '- בעלי מניות section: check each shareholder name — if it contains בע"מ/Ltd/LLC/Inc/company/corp then it is a corporate shareholder → set kyb_ubo_hasCorporateShareholder="Yes — one or more corporate shareholders exist" AND kyb_ubo_corporateShareholderName. If ALL shareholders are individual people → set kyb_ubo_hasCorporateShareholder="No — all shareholders are individuals"\n' +
+      '- דירקטורים + בעלי תפקידים sections: list ALL names and roles in the summary. Transliterate Hebrew names to English. מנכ"ל=CEO, סמנכ"ל=VP, רו"ח/רואה חשבון=Accountant, נושא משרה=Officer, מנהל=Manager\n' +
+      '- Summary format for registry docs: "[Company name] ([reg number]). Directors: [names]. Officers: [name] ([role]). Shareholders: [names with %]"\n' +
       'FIELD_ID="companyNameInEnglish" QUESTION="Name of the Business"\n' +
       'Document contains: "שם חברה: גרניטה - מקבוצת שאהין בע\'\'מ"\n' +
       'CORRECT: {"companyNameInEnglish": {"value": "Granita - Shahin Group Ltd", "confidence": "high"}}\n' +

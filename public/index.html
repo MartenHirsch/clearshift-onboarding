@@ -2750,14 +2750,16 @@ STRICT RULES — VIOLATIONS ARE SERIOUS:
 - When in doubt, leave it out
 
 KYB EXTRACTION GUIDANCE — Israeli/Hebrew Registry Documents:
-- "שם חברה" or "שם החברה" = company name → extract to kyb_legalName
+- "שם חברה באנגלית" = English company name → extract to BOTH kyb_legalName AND companyNameInEnglish
+- "שם חברה" or "שם החברה" = Hebrew company name → transliterate to English and extract to kyb_legalName (and companyNameInEnglish if no English name present)
 - "מספר חברה" or "מס' חברה" = company registration number → extract to kyb_regNumber
 - "כתובת התאגיד" = registered address → extract to kyb_regAddress
 - "תאריך רישום" = registration date → extract to kyb_regDate
-- "סוג חברה" = company type (ישראלית=Israeli private) → extract to kyb_legalForm
-- "בעלי מניות" section = shareholders: if ANY shareholder name contains "בע\"מ", "Ltd", "LLC", "Inc", "company", or "corp" it is a COMPANY → set kyb_ubo_hasCorporateShareholder="Yes — one or more corporate shareholders exist" AND kyb_ubo_corporateShareholderName to that company's name; if ALL shareholders are individuals → set kyb_ubo_hasCorporateShareholder="No — all shareholders are individuals"
-- "דירקטורים" and "בעלי תפקידים" sections = list ALL directors/officers in the summary field (transliterate Hebrew names to English), e.g. "Directors: Yaron Menachem, Ari Dabner, Marten Hirsch; Officers: Julia Lea Buton-Partosh (officer), Chaim Henrich Hilrovich (accountant)"
-- Hebrew names: write in English transliteration (e.g. "ירון מנחם" → "Yaron Menachem", "דאבנר ארי" → "Ari Dabner", "הילרוביץ' חיים הנריך" → "Chaim Henrich Hilrovich")
+- "סוג חברה ישראלית" + "חברה פרטית" = Private Limited Company → extract to kyb_legalForm
+- "בעלי מניות" section = shareholders: if ANY shareholder name contains "בע"מ", "Ltd", "LLC", "Inc", "company", or "corp" it is a COMPANY → set kyb_ubo_hasCorporateShareholder="Yes — one or more corporate shareholders exist" AND kyb_ubo_corporateShareholderName to that company's name; if ALL shareholders are individuals → set kyb_ubo_hasCorporateShareholder="No — all shareholders are individuals"
+- "דירקטורים" and "בעלי תפקידים" sections = list ALL directors/officers in the summary with roles. מנכ"ל=CEO, סמנכ"ל=VP, רואה חשבון=Accountant, נושא משרה=Officer
+- Summary format: "[Company] ([reg#]). Directors: [names]. Officers: [name] ([role]). Shareholders: [name] [%]%"
+- Hebrew names: transliterate to English (e.g. "סרסור אוסאמה" → "Osama Sarsur", "ירון מנחם" → "Yaron Menachem")
 - "אזרח ישראלי" = Israeli citizen, "אזרח זר" = foreign citizen
 
 PEP RULE — CRITICAL COMPLIANCE REQUIREMENT:
