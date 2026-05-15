@@ -715,6 +715,7 @@ app.post('/api/analyze', async (req, res) => {
       '- בעלי מניות section: check each shareholder name — if it contains בע"מ/Ltd/LLC/Inc/company/corp then it is a corporate shareholder → set kyb_ubo_hasCorporateShareholder="Yes — one or more corporate shareholders exist" AND kyb_ubo_corporateShareholderName. If ALL shareholders are individual people → set kyb_ubo_hasCorporateShareholder="No — all shareholders are individuals"\n' +
       '- דירקטורים + בעלי תפקידים sections: list ALL names and roles in the summary. Transliterate Hebrew names to English. מנכ"ל=CEO, סמנכ"ל=VP, רו"ח/רואה חשבון=Accountant, נושא משרה=Officer, מנהל=Manager\n' +
       '- Summary format for registry docs: "[Company name] ([reg number]). Directors: [names]. Officers: [name] ([role]). Shareholders: [names with %]"\n' +
+      '- CRITICAL: Always write names as FIRSTNAME LASTNAME order (e.g. "Osama Sarsur" not "Sarsur Osama")\n' +
       'FIELD_ID="companyNameInEnglish" QUESTION="Name of the Business"\n' +
       'Document contains: "שם חברה: גרניטה - מקבוצת שאהין בע\'\'מ"\n' +
       'CORRECT: {"companyNameInEnglish": {"value": "Granita - Shahin Group Ltd", "confidence": "high"}}\n' +

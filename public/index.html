@@ -2781,6 +2781,7 @@ KYB EXTRACTION GUIDANCE — Israeli/Hebrew Registry Documents:
 - "בעלי מניות" section = shareholders: if ANY shareholder name contains "בע"מ", "Ltd", "LLC", "Inc", "company", or "corp" it is a COMPANY → set kyb_ubo_hasCorporateShareholder="Yes — one or more corporate shareholders exist" AND kyb_ubo_corporateShareholderName to that company's name; if ALL shareholders are individuals → set kyb_ubo_hasCorporateShareholder="No — all shareholders are individuals"
 - "דירקטורים" and "בעלי תפקידים" sections = list ALL directors/officers in the summary with roles. מנכ"ל=CEO, סמנכ"ל=VP, רואה חשבון=Accountant, נושא משרה=Officer
 - Summary format: "[Company] ([reg#]). Directors: [names]. Officers: [name] ([role]). Shareholders: [name] [%]%"
+- CRITICAL: Always write names as FIRSTNAME LASTNAME order (e.g. "Osama Sarsur" not "Sarsur Osama", "Yaron Menachem" not "Menachem Yaron")
 - Hebrew names: transliterate to English (e.g. "סרסור אוסאמה" → "Osama Sarsur", "ירון מנחם" → "Yaron Menachem")
 - "אזרח ישראלי" = Israeli citizen, "אזרח זר" = foreign citizen
 
@@ -2879,6 +2880,9 @@ FIELDS:\n${fieldSummary}\n\n---\n\nDOCUMENTS TO EXTRACT FROM:`
     // Store and display the analysis summary (contains director/UBO names etc.)
     if (data.summary && data.summary !== 'No extractable onboarding data found') {
       analysisNotes = data.summary;
+
+      // Auto-populate director/UBO cards from summary
+      autoPopulatePersonsFromSummary(data.summary);
     }
 
     setStep('extract', 'done', `${fieldsFound} fields`);
@@ -4104,6 +4108,112 @@ async function checkPersonStatus(listKey, idx) {
     markUnsaved();
     refreshPersonCards(listKey);
   } catch(e) { alert('Status check error: ' + e.message); }
+}
+
+function autoPopulatePersonsFromSummary(summary) {
+  if (!summary) return;
+
+  const s = summary;
+
+  // ── Parse Directors ─────────────────────────────────────────
+  // Patterns: "Directors: Name1, Name2", "Director: Name", "Director & CEO: Name",
+  //           "Director/CEO: Name", "Director (role): Name"
+  const directorPatterns = [
+    /Directors?\s*(?:&\s*\w+)?\s*(?:\/\s*\w+)?\s*:\s*([^.;\n]+)/gi,
+    /(?:CEO|Managing Director|Executive Director)\s*:\s*([^,.(;\n]+)/gi,
+  ];
+
+  const officerPatterns = [
+    /Officers?\s*:\s*([^.;\n]+)/gi,
+    /(?:CEO|CFO|COO|Accountant|Officer)\s*:\s*([^,.(;\n]+)/gi,
+  ];
+
+  const shareholderPatterns = [
+    /Shareholders?\s*:\s*([^.;\n]+)/gi,
+    /UBOs?\s*:\s*([^.;\n]+)/gi,
+    /Individual shareholders?\s*:\s*([^.;\n]+)/gi,
+  ];
+
+  function parseName(raw) {
+    // Strip percentages, IDs, nationalities etc.
+    const cleaned = raw
+      .replace(/\(.*?\)/g, '')           // remove parentheses content
+      .replace(/\d+%/g, '')              // remove percentages
+      .replace(/ID\s*\d+/gi, '')         // remove ID numbers
+      .replace(/Israeli|foreign/gi, '')  // remove nationality words
+      .trim();
+    if (!cleaned || cleaned.length < 3) return null;
+
+    const parts = cleaned.split(/\s+/).filter(Boolean);
+    if (parts.length < 2) return null;
+
+    // Handle "LastName FirstName" order (common in Hebrew transliteration)
+    // Detect by checking if first word looks like a surname (all caps or known pattern)
+    return {
+      firstName: parts.slice(1).join(' ') || parts[0],
+      lastName:  parts[0],
+      raw: cleaned
+    };
+  }
+
+  function addIfNew(listKey, person, extra = {}) {
+    if (!person) return;
+    if (!kybPersons[listKey]) kybPersons[listKey] = [];
+    // Don't duplicate
+    const exists = kybPersons[listKey].some(p =>
+      p.firstName?.toLowerCase() === person.firstName?.toLowerCase() &&
+      p.lastName?.toLowerCase()  === person.lastName?.toLowerCase()
+    );
+    if (!exists) {
+      kybPersons[listKey].push({ ...person, ...extra });
+    }
+  }
+
+  // Extract director names
+  for (const pattern of directorPatterns) {
+    let match;
+    while ((match = pattern.exec(s)) !== null) {
+      // Could be a comma-separated list of names
+      const nameList = match[1].split(/,\s*/);
+      for (const raw of nameList) {
+        const person = parseName(raw.trim());
+        if (person) addIfNew('directors', { firstName: person.firstName, lastName: person.lastName });
+      }
+    }
+  }
+
+  // Extract officer names with roles
+  const officerRoleMap = { 'ceo': 'CEO', 'cfo': 'CFO', 'coo': 'COO', 'accountant': 'Accountant', 'officer': 'Officer', 'manager': 'Managing Director' };
+  for (const pattern of officerPatterns) {
+    let match;
+    while ((match = pattern.exec(s)) !== null) {
+      const nameList = match[1].split(/,\s*/);
+      for (const raw of nameList) {
+        // Extract role if present: "Name (role)"
+        const roleMatch = raw.match(/\(([^)]+)\)/);
+        const role = roleMatch ? (officerRoleMap[roleMatch[1].toLowerCase()] || roleMatch[1]) : 'Officer';
+        const person = parseName(raw.trim());
+        if (person) addIfNew('directors', { firstName: person.firstName, lastName: person.lastName, title: role });
+      }
+    }
+  }
+
+  // Extract individual shareholders as UBOs
+  for (const pattern of shareholderPatterns) {
+    let match;
+    while ((match = pattern.exec(s)) !== null) {
+      const nameList = match[1].split(/,\s*/);
+      for (const raw of nameList) {
+        // Extract ownership % if present
+        const pctMatch = raw.match(/(\d+)%/);
+        const ownershipPct = pctMatch ? pctMatch[1] : '';
+        const person = parseName(raw.trim());
+        if (person) addIfNew('ubos', { firstName: person.firstName, lastName: person.lastName, ownershipPct });
+      }
+    }
+  }
+
+  saveKybPersons();
 }
 
 function setAsRepresentative(directorIdx) {
