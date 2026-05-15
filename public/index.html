@@ -589,6 +589,26 @@
   .notice-banner strong { color: var(--text); }
   .notice-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
 
+  /* Analysis notes banner */
+  .analysis-notes-banner {
+    display: flex;
+    gap: 14px;
+    background: rgba(91,255,160,0.06);
+    border: 1px solid rgba(91,255,160,0.2);
+    border-left: 4px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    margin-bottom: 20px;
+    position: relative;
+  }
+  .anb-icon { font-size: 20px; flex-shrink: 0; padding-top: 2px; }
+  .anb-body { flex: 1; }
+  .anb-title { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 6px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .anb-text { font-size: 12px; color: var(--text); line-height: 1.6; margin-bottom: 6px; }
+  .anb-hint { font-size: 11px; color: var(--text-dimmer); }
+  .anb-close { position: absolute; top: 12px; right: 14px; background: none; border: none; color: var(--text-dimmer); cursor: pointer; font-size: 14px; padding: 2px 6px; border-radius: 4px; }
+  .anb-close:hover { color: var(--text); }
+
   /* Missing summary */
   .missing-summary {
     background: var(--surface);
@@ -2093,6 +2113,7 @@ function loadKybPersons() {
 // ===== STATE =====
 let uploadedFiles = [];
 let extractedData = {}; // fieldId -> { value, source }
+let analysisNotes = ''; // summary from last Claude extraction
 let isProcessing  = false;
 let currentApplicantId   = null;
 let currentApplicantName = null;
@@ -2451,6 +2472,7 @@ function newApplicant() {
   unsavedChanges       = false;
   uploadedFiles        = [];
   audioFiles           = [];
+  analysisNotes        = '';
   kybPersons           = { ubos: [], directors: [], representatives: [] };
   renderFileList();
   renderAudioFileList();
@@ -2836,13 +2858,12 @@ FIELDS:\n${fieldSummary}\n\n---\n\nDOCUMENTS TO EXTRACT FROM:`
     if (data.extracted) {
       Object.entries(data.extracted).forEach(([k, v]) => {
         if (v && v.value) {
-          // PEP guard: only accept explicit Yes/No/Uncertain — never inferred values
           if (k === 'areYouAPep') {
             const val = v.value.trim();
             const allowed = ['Yes', 'No', 'Uncertain'];
             const matched = allowed.find(a => a.toLowerCase() === val.toLowerCase());
-            if (!matched) return; // reject anything that isn't an explicit answer
-            v.value = matched; // normalise capitalisation
+            if (!matched) return;
+            v.value = matched;
           }
           extractedData[k] = {
             value: v.value,
@@ -2853,6 +2874,11 @@ FIELDS:\n${fieldSummary}\n\n---\n\nDOCUMENTS TO EXTRACT FROM:`
           fieldsFound++;
         }
       });
+    }
+
+    // Store and display the analysis summary (contains director/UBO names etc.)
+    if (data.summary && data.summary !== 'No extractable onboarding data found') {
+      analysisNotes = data.summary;
     }
 
     setStep('extract', 'done', `${fieldsFound} fields`);
@@ -3172,6 +3198,19 @@ function renderDashboard() {
       <div class="missing-list">
         ${missingRequired.map(f => `<span class="missing-tag" onclick="scrollToField('${f.id}')">${f.title}</span>`).join('')}
       </div>
+    </div>`;
+  }
+
+  // ── Analysis Notes (director/UBO names from registry) ────────
+  if (analysisNotes) {
+    html += `<div class="analysis-notes-banner">
+      <div class="anb-icon">📋</div>
+      <div class="anb-body">
+        <div class="anb-title">Document Analysis Summary</div>
+        <div class="anb-text">${escHtml(analysisNotes)}</div>
+        <div class="anb-hint">Use the names above to add Directors, UBOs and Representatives in the KYB sections below.</div>
+      </div>
+      <button class="anb-close" onclick="analysisNotes='';renderDashboard()">✕</button>
     </div>`;
   }
 
@@ -3907,6 +3946,7 @@ function renderPersonCard(person, idx, listKey, template, label) {
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         ${verifyBtnHtml}
+        ${listKey === 'directors' ? `<button class="kyb-verify-btn" onclick="setAsRepresentative(${idx})" style="font-size:10px;padding:4px 10px;background:rgba(167,139,250,0.1);border-color:rgba(167,139,250,0.3);color:#a78bfa" title="Copy this person to the Representatives section">🤝 Set as Rep</button>` : ''}
         <button class="field-edit-cancel" onclick="removePersonCard('${listKey}', ${idx})" style="font-size:11px;padding:4px 8px;color:var(--danger);border-color:rgba(255,107,107,0.3)">✕ Remove</button>
       </div>
     </div>
@@ -4064,6 +4104,55 @@ async function checkPersonStatus(listKey, idx) {
     markUnsaved();
     refreshPersonCards(listKey);
   } catch(e) { alert('Status check error: ' + e.message); }
+}
+
+function setAsRepresentative(directorIdx) {
+  const director = kybPersons.directors?.[directorIdx];
+  if (!director) return;
+
+  // Map director fields to representative fields
+  const rep = {
+    firstName:  director.firstName  || '',
+    middleName: director.middleName || '',
+    lastName:   director.lastName   || '',
+    title:      director.title      || '',
+    email:      director.email      || '',
+    phone:      director.phone      || '',
+    nationality:director.nationality|| '',
+    idType:     director.idType     || '',
+    idNumber:   director.idNumber   || '',
+    idExpiry:   director.idExpiry   || '',
+    authBasis:  'Director / officer of company'
+  };
+
+  if (!kybPersons.representatives) kybPersons.representatives = [];
+
+  // Check if already added
+  const name = [rep.firstName, rep.lastName].filter(Boolean).join(' ');
+  const exists = kybPersons.representatives.some(r =>
+    r.firstName === rep.firstName && r.lastName === rep.lastName
+  );
+  if (exists) {
+    alert(`${name} is already in the Representatives list.`);
+    return;
+  }
+
+  kybPersons.representatives.push(rep);
+  saveKybPersons();
+  markUnsaved();
+
+  // Expand the Representatives section and scroll to it
+  const body    = document.getElementById('kyb-body-kybRepresentative');
+  const chevron = document.getElementById('kyb-chevron-kybRepresentative');
+  if (body) { body.style.display = 'block'; }
+  if (chevron) { chevron.textContent = '▲'; }
+  refreshPersonCards('representatives');
+
+  // Brief confirmation
+  const btn = document.querySelector(`#person-card-directors-${directorIdx} .kyb-verify-btn[onclick*="setAsRepresentative"]`);
+  if (btn) { btn.textContent = '✓ Added'; setTimeout(() => btn.textContent = '🤝 Set as Rep', 2000); }
+
+  document.getElementById('section-kybRepresentative')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function toggleKybSection(sectionId) {
